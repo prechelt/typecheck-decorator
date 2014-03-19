@@ -150,33 +150,45 @@ Checker.register(inspect.isclass, TypeChecker)
 
 ################################################################################
 
-iterable = lambda x: hasattr(x, "__iter__")
+istupleoid = lambda x: isinstance(x, ().__class__) or isinstance(x, [].__class__)
 
-class IterableChecker(Checker):
+class TupleChecker(Checker):
 
-    def __init__(self, cont):
-        self._cls = type(cont)
-        self._checks = tuple(Checker.create(x) for x in iter(cont))
+    def __init__(self, the_sequence):
+        self._cls = type(the_sequence)
+        self._checks = tuple(Checker.create(x) for x in iter(the_sequence))
 
     def check(self, value):
-        if not iterable(value):
+        """specifying a plain tuple allows arguments that are tuples or lists;
+        specifying a specialized (subclassed) tuple allows only that type;
+        specifying a list allows only that list type."""
+        spec_is_plain_tuple = self._cls == ().__class__
+        spec_is_list = issubclass(self._cls, [].__class__)
+        spec_is_specialized_tuple = (issubclass(self._cls, ().__class__) and
+                                     not spec_is_plain_tuple)
+        if ((spec_is_plain_tuple and istupleoid(value)) or
+            (spec_is_specialized_tuple and isinstance(value, self._cls)) or
+            (spec_is_list and isinstance(value, self._cls))):
+            # actual element type checking is warranted:
+            values = tuple(iter(value))
+            if len(values) != len(self._checks):  return False
+            for thischeck, thisvalue in zip(self._checks, values):
+                if not thischeck(thisvalue): return False
+            return True
+        else:
             return False
-        vals = tuple(iter(value))
-        return isinstance(value, self._cls) and len(self._checks) == len(vals) and \
-               functools.reduce(lambda r, c_v: r and c_v[0].check(c_v[1]),
-                                zip(self._checks, vals), True)
 
-Checker.register(iterable, IterableChecker)
+Checker.register(istupleoid, TupleChecker)
 
 ################################################################################
 
 class CallableChecker(Checker):
 
-    def __init__(self, func):
-        self._func = func
+    def __init__(self, callable):
+        self._callable = callable
 
     def check(self, value):
-        return bool(self._func(value))
+        return bool(self._callable(value))
 
 Checker.register(callable, CallableChecker)
 
