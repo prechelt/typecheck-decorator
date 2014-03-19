@@ -2,12 +2,32 @@ if __name__ == "__main__":
 
     print("self-testing module typecheck.py:")
 
-    from expected import expected
     from time import time
     from random import randint, shuffle
     from traceback import extract_stack
 
     ############################################################################
+
+    class expected:
+
+        def __init__(self, e):
+            if isinstance(e, Exception):
+                self._t, self._v = e.__class__, str(e)
+            elif isinstance(e, type) and issubclass(e, Exception):
+                self._t, self._v = e, None
+            else:
+                raise Exception("usage: with expected(Exception): or with expected(Exception(\"text\"))")
+
+        def __enter__(self):
+            try:
+                pass
+            except:
+                pass # this is a Python 3000 way of saying sys.exc_clear()
+
+        def __exit__(self, t, v, tb):
+            assert t is not None, "expected {0:s} to have been thrown".format(self._t.__name__)
+            return issubclass(t, self._t) and (self._v is None or str(v).startswith(self._v))
+
 
     print("method proxy naming: ", end = "")
 
