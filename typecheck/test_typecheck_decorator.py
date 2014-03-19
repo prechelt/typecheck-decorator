@@ -47,9 +47,7 @@ class expected:
 
 ############################################################################
 
-print("method proxy naming: ", end = "")
-
-###################
+print("method proxy naming: ", end="")
 
 @typecheck
 def foo() -> nothing:
@@ -57,15 +55,11 @@ def foo() -> nothing:
 
 assert foo.__name__ == "foo"
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("avoiding excessive proxying: ", end = "")
-
-###################
+print("avoiding excessive proxying: ", end="")
 
 @typecheck
 def foo():
@@ -79,15 +73,11 @@ def bar() -> nothing:
 
 bar()
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("double annotations wrapping: ", end = "")
-
-###################
+print("double annotations wrapping: ", end="")
 
 @typecheck
 def foo(x: int):
@@ -95,15 +85,11 @@ def foo(x: int):
 
 assert foo(1) == typecheck(foo)(1) == 1
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("empty strings in incompatible values: ", end = "")
-
-###################
+print("empty strings in incompatible values: ", end="")
 
 @typecheck
 def foo(s: lambda s: s != "" = None):
@@ -138,15 +124,11 @@ assert foo(0) == 0
 with expected(ReturnValueError("foo() has returned an incompatible value: ''")):
     foo("")
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("invalid typecheck: ", end = "")
-
-###################
+print("invalid typecheck: ", end="")
 
 with expected(TypeCheckSpecificationError("invalid typecheck for a")):
     @typecheck
@@ -163,15 +145,11 @@ with expected(TypeCheckSpecificationError("invalid typecheck for return")):
     def foo() -> 10:
         pass
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("incompatible default value: ", end = "")
-
-###################
+print("incompatible default value: ", end="")
 
 with expected(TypeCheckSpecificationError("the default value for b is incompatible with its typecheck")):
     @typecheck
@@ -198,15 +176,11 @@ with expected(TypeCheckSpecificationError("the default value for b is incompatib
     def kw(*, a: int = 1, b: str = 10):
         pass
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("changed default value: ", end = "")
-
-###################
+print("changed default value: ", end="")
 
 @typecheck
 def foo(a: list = []):
@@ -232,15 +206,11 @@ assert foo(k = []) == [0]
 assert foo() == [0, 1, 2]
 assert foo() == [0, 1, 2, 3]
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("default vs. checked args: ", end = "")
-
-###################
+print("default vs. checked args: ", end="")
 
 @typecheck
 def axn_bxn(a, b):
@@ -505,15 +475,11 @@ with expected(InputParameterError("a1c_b2c() has got an incompatible value for a
 
 assert a1c_b2c() == 3
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("default vs. checked args (randomly generated): ", end = "")
-
-###################
+print("default vs. checked args (randomly generated): ", end="")
 
 test_passes = 0
 
@@ -562,15 +528,11 @@ while time() < start + 3.0:
 
         test_passes += 1
 
-###################
-
 print("{0} test passes ok".format(test_passes))
 
 ############################################################################
 
-print("default vs. checked kwargs: ", end = "")
-
-###################
+print("default vs. checked kwargs: ", end="")
 
 @typecheck
 def foo(*, a: str):
@@ -807,15 +769,11 @@ with expected(InputParameterError("p1c_q2c() has got an incompatible value for p
 with expected(InputParameterError("p1c_q2c() has got an incompatible value for q: <no value>")):
     p1c_q2c()
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("default vs. checked kwargs (randomly generated): ", end = "")
-
-###################
+print("default vs. checked kwargs (randomly generated): ", end="")
 
 test_passes = 0
 
@@ -867,15 +825,11 @@ while time() < start + 3.0:
 
         test_passes += 1
 
-###################
-
 print("{0} test passes ok".format(test_passes))
 
 ############################################################################
 
-print("TypeChecker: ", end = "")
-
-###################
+print("TypeChecker: ", end="")
 
 @typecheck
 def foo(a: int) -> object:
@@ -917,15 +871,11 @@ f = Foo()
 with expected(ReturnValueError("foo() has returned an incompatible value: <__main__.Foo object at")):
     foo(f)
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("IterableChecker: ", end = "")
-
-###################
+print("IterableChecker: ", end="")
 
 @typecheck
 def foo(a: () = (), *, k: optional(()) = ()) -> ((), ()):
@@ -1000,15 +950,11 @@ assert foo(k = [[[[1]]]]) % 3 == 1
 with expected(InputParameterError("foo() has got an incompatible value for k: [[[[5]]]]")):
     foo(k = [[[[5]]]])
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("CallableChecker: ", end = "")
-
-###################
+print("CallableChecker: ", end="")
 
 @typecheck
 def foo(a: callable, *, k: callable) -> callable:
@@ -1050,15 +996,11 @@ assert foo() is None
 with expected(ReturnValueError("foo() has returned an incompatible value: ''")):
     foo("")
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("OptionalChecker: ", end = "")
-
-###################
+print("OptionalChecker: ", end="")
 
 @typecheck
 def foo(b: bool) -> bool:
@@ -1121,15 +1063,11 @@ def foo(x = None) -> optional(not_none): # note how optional overrides the not_n
 assert foo() is None
 assert foo(None) is None
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("with_attr: ", end = "")
-
-###################
+print("with_attr: ", end="")
 
 class FakeIO:
     def write(self):
@@ -1153,15 +1091,11 @@ with expected(InputParameterError("foo() has got an incompatible value for a: <_
 assert with_attr("__class__")(int) and with_attr("__class__").check(int)
 assert not with_attr("foo")(int) and not with_attr("foo").check(int)
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("by_regex: ", end = "")
-
-###################
+print("by_regex: ", end="")
 
 assert by_regex("^abc$")("abc")
 assert not by_regex("^abc$")(b"abc")
@@ -1253,15 +1187,11 @@ with expected(InputParameterError("numbers_only_please() has got an incompatible
 assert by_regex("^123$")("123") and by_regex("^123$").check("123")
 assert not by_regex("^123$")("foo") and not by_regex("^123$").check("foo")
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("tuple_of: ", end = "")
-
-###################
+print("tuple_of: ", end="")
 
 @typecheck
 def foo(x: tuple_of(int)) -> tuple_of(float):
@@ -1294,15 +1224,11 @@ assert tuple_of(optional(by_regex("^foo$")))(("foo", None, "foo")) and \
 assert not tuple_of(optional(by_regex("^foo$")))(("123", None, "foo")) and \
        not tuple_of(optional(by_regex("^foo$"))).check(("123", None, "foo"))
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("list_of: ", end = "")
-
-###################
+print("list_of: ", end="")
 
 @typecheck
 def foo(x: list_of(int)) -> list_of(float):
@@ -1335,15 +1261,11 @@ assert list_of(optional(by_regex("^foo$")))(["foo", None, "foo"]) and \
 assert not list_of(optional(by_regex("^foo$")))(["123", None, "foo"]) and \
        not list_of(optional(by_regex("^foo$"))).check(["123", None, "foo"])
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("dict_of: ", end = "")
-
-###################
+print("dict_of: ", end="")
 
 @typecheck
 def foo(x: dict_of(int, str)) -> dict_of(str, int):
@@ -1389,15 +1311,11 @@ assert dict_of(int, optional(str))({ 1: "foo", 2: None }) and \
 assert not dict_of(int, optional(str))({ None: "foo", 2: None }) and \
        not dict_of(int, optional(str)).check({ None: "foo", 2: None })
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("one_of: ", end = "")
-
-###################
+print("one_of: ", end="")
 
 @typecheck
 def foo(x: one_of(int, 1)) -> one_of(1, int):
@@ -1427,15 +1345,11 @@ def foo(x: optional(one_of(1, 2)) = 2):
 
 assert foo() == 2
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("either: ", end = "")
-
-###################
+print("either: ", end="")
 
 @typecheck
 def foo(x: either()):
@@ -1482,15 +1396,11 @@ assert accept_number(-1) == 0
 with expected(InputParameterError("accept_number() has got an incompatible value for x: -1")):
     accept_number("-1")
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("custom exceptions: ", end = "")
-
-###################
+print("custom exceptions: ", end="")
 
 @typecheck_with_exceptions(input_parameter_error = ZeroDivisionError)
 def foo(x: int):
@@ -1524,15 +1434,11 @@ with expected(InputParameterError("typecheck_with_exceptions() has got an incomp
     def foo():
         pass
 
-###################
-
 print("ok")
 
 ############################################################################
 
-print("disable: ", end = "")
-
-###################
+print("disable: ", end="")
 
 @typecheck
 def foo(x: int):
@@ -1550,8 +1456,6 @@ with expected(InputParameterError("foo() has got an incompatible value for x: 1"
 
 bar(1)
 bar("1")
-
-###################
 
 print("ok")
 
