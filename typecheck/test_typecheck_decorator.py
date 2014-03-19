@@ -3,10 +3,11 @@
 # Most of this file is from the lower part of Dmitry Dvoinikov's
 # http://www.targeted.org/python/recipes/typecheck3000.py
 
+import functools
 import platform
-
-from time import time
+import re
 from random import randint, shuffle
+from time import time
 from traceback import extract_stack
 
 from typecheck import *
@@ -21,24 +22,28 @@ print("If this run fails, please report the complete output to prechelt@inf.fu-b
 ############################################################################
 
 class expected:
-
-    def __init__(self, e):
+    def __init__(self, e, msg_regexp=None):
         if isinstance(e, Exception):
-            self._t, self._v = e.__class__, str(e)
+            self._type, self._msg = e.__class__, str(e)
         elif isinstance(e, type) and issubclass(e, Exception):
-            self._t, self._v = e, None
+            self._type, self._msg = e, msg_regexp
         else:
-            raise Exception("usage: with expected(Exception): or with expected(Exception(\"text\"))")
+            raise Exception("usage: 'with expected(Exception)'")
 
-    def __enter__(self):
+    def __enter__(self):  # make this a context handler
         try:
             pass
         except:
-            pass # this is a Python 3000 way of saying sys.exc_clear()
+            pass # this is a Python3 way of saying sys.exc_clear()
 
-    def __exit__(self, t, v, tb):
-        assert t is not None, "expected {0:s} to have been thrown".format(self._t.__name__)
-        return issubclass(t, self._t) and (self._v is None or str(v).startswith(self._v))
+    def __exit__(self, exc_type, exc_value, traceback):
+        assert exc_type is not None, \
+            "expected {0:s} to have been thrown".format(self._type.__name__)
+        msg = str(exc_value)
+        return (issubclass(exc_type, self._type) and
+                (self._msg is None or
+                 msg.startswith(self._msg) or  # for instance
+                 re.match(self._msg, msg)))    # for class + regexp
 
 ############################################################################
 
@@ -513,7 +518,7 @@ print("default vs. checked args (randomly generated): ", end = "")
 test_passes = 0
 
 start = time()
-while time() < start + 5.0:
+while time() < start + 3.0:
 
     N = randint(1, 10)
     DN = randint(0, N)
@@ -815,7 +820,7 @@ print("default vs. checked kwargs (randomly generated): ", end = "")
 test_passes = 0
 
 start = time()
-while time() < start + 5.0:
+while time() < start + 3.0:
 
     N = randint(1, 10)
 
