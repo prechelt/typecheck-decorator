@@ -1,2 +1,1 @@
-__author__ = 'prechelt'
-__creationdate__ = 
+from typecheck_decorator import *
