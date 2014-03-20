@@ -41,7 +41,7 @@
 #     ...
 #
 # @typecheck
-# def set_level(level: one_of(1, 2, 3)):
+# def set_level(level: either_value(1, 2, 3)):
 #     ...
 #
 # @typecheck
@@ -71,7 +71,7 @@ __all__ = [
 
 "optional", "hasattrs", "matches", "callable", "anything",
 "sequence_of", "tuple_of", "list_of", "dict_of",
-"one_of", "either",
+"either_value", "either",
 
 # exceptions
 
@@ -282,7 +282,7 @@ dict_of = DictOfChecker
 
 ################################################################################
 
-class OneOfChecker(Checker):
+class EitherValueChecker(Checker):
 
     def __init__(self, *values):
         self._values = values
@@ -290,7 +290,7 @@ class OneOfChecker(Checker):
     def check(self, value):
         return value in self._values
 
-one_of = OneOfChecker
+either_value = EitherValueChecker
 
 ################################################################################
 

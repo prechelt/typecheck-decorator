@@ -1352,10 +1352,10 @@ print("ok")
 
 ############################################################################
 
-print("one_of: ", end="")
+print("either_value: ", end="")
 
 @typecheck
-def foo(x: one_of(int, 1)) -> one_of(1, int):
+def foo(x: either_value(int, 1)) -> either_value(1, int):
     return x
 
 assert foo(1) == 1
@@ -1365,7 +1365,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: 2"
     foo(2)
 
 @typecheck
-def bar(*, x: one_of(None)) -> one_of():
+def bar(*, x: either_value(None)) -> either_value():
     return x
 
 with expected(ReturnValueError("bar() has returned an incompatible value: None")):
@@ -1373,11 +1373,11 @@ with expected(ReturnValueError("bar() has returned an incompatible value: None")
 
 with expected(TypeCheckSpecificationError("the default value for x is incompatible with its typecheck")):
     @typecheck
-    def foo(x: one_of(1) = 2):
+    def foo(x: either_value(1) = 2):
         pass
 
 @typecheck
-def foo(x: optional(one_of(1, 2)) = 2):
+def foo(x: optional(either_value(1, 2)) = 2):
     return x
 
 assert foo() == 2
@@ -1396,7 +1396,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: 1"
     foo(1)
 
 @typecheck
-def bar(x: either((int, float), matches("^foo$"), one_of(b"X", b"Y"))):
+def bar(x: either((int, float), matches("^foo$"), either_value(b"X", b"Y"))):
     pass
 
 bar((1, 1.0))
