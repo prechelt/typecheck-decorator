@@ -69,7 +69,7 @@ __all__ = [
 
 # check predicates
 
-"optional", "with_attr", "by_regex", "callable", "anything", "nothing",
+"optional", "hasattrs", "by_regex", "callable", "anything", "nothing",
 "tuple_of", "list_of", "dict_of", "one_of", "either",
 
 # exceptions
@@ -200,19 +200,15 @@ optional = OptionalChecker
 
 ################################################################################
 
-class WithAttrChecker(Checker):
+class HasAttrChecker(Checker):
 
     def __init__(self, *attrs):
         self._attrs = attrs
 
     def check(self, value):
-        for attr in self._attrs:
-            if not hasattr(value, attr):
-                return False
-        else:
-            return True
+        return all([hasattr(value, attr) for attr in self._attrs])
 
-with_attr = WithAttrChecker
+hasattrs = HasAttrChecker
 
 ################################################################################
 

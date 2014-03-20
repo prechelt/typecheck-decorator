@@ -1069,7 +1069,7 @@ print("ok")
 
 ############################################################################
 
-print("with_attr: ", end="")
+print("hasattrs: ", end="")
 
 class FakeIO:
     def write(self):
@@ -1078,7 +1078,7 @@ class FakeIO:
         pass
 
 @typecheck
-def foo(a: with_attr("write", "flush")):
+def foo(a: hasattrs("write", "flush")):
     pass
 
 foo(FakeIO())
@@ -1090,8 +1090,8 @@ with expected(InputParameterError("foo() has got an incompatible value for a: <_
 
 ###################
 
-assert with_attr("__class__")(int) and with_attr("__class__").check(int)
-assert not with_attr("foo")(int) and not with_attr("foo").check(int)
+assert hasattrs("__class__")(int) and hasattrs("__class__").check(int)
+assert not hasattrs("foo")(int) and not hasattrs("foo").check(int)
 
 print("ok")
 
