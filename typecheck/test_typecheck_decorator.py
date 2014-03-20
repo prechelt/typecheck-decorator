@@ -50,7 +50,7 @@ class expected:
 print("method proxy naming: ", end="")
 
 @typecheck
-def foo() -> nothing:
+def foo() -> type(None):
     pass
 
 assert foo.__name__ == "foo"
@@ -68,7 +68,7 @@ def foo():
 foo()
 
 @typecheck
-def bar() -> nothing:
+def bar() -> type(None):
     assert extract_stack()[-2][2] == "typecheck_invocation_proxy"
 
 bar()
@@ -990,7 +990,7 @@ with expected(InputParameterError("is_even() has got an incompatible value for v
 ###################
 
 @typecheck
-def foo(x = None) -> nothing:
+def foo(x = None) -> type(None):
     return x
 
 assert foo() is None
@@ -1267,6 +1267,41 @@ print("ok")
 
 ############################################################################
 
+print("sequence_of: ", end="")
+
+@typecheck
+def foo(x: sequence_of(int)) -> sequence_of(float):
+    return list(map(float, x))
+
+assert foo([]) == []
+assert foo(()) == []
+assert foo([1, 2, 3]) == [1.0, 2.0, 3.0]
+
+with expected(InputParameterError("foo() has got an incompatible value for x: ['1.0']")):
+    foo(["1.0"])
+
+###################
+
+@typecheck
+def foo(x: sequence_of((matches("^[01]+$"), int))) -> bool:
+    return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
+                            x, True)
+
+assert foo([("1010", 10), ("0101", 5)])
+assert not foo([("1010", 10), ("0111", 77)])
+
+###################
+
+assert sequence_of(optional(matches("^foo$")))(["foo", None, "foo"]) and \
+       sequence_of(optional(matches("^foo$"))).check(["foo", None, "foo"])
+
+assert not sequence_of(optional(matches("^foo$")))(["123", None, "foo"]) and \
+       not sequence_of(optional(matches("^foo$"))).check(["foo", None, "1234"])
+
+print("ok")
+
+############################################################################
+
 print("dict_of: ", end="")
 
 @typecheck
@@ -1378,7 +1413,7 @@ with expected(InputParameterError("bar() has got an incompatible value for x: X"
 with expected(InputParameterError("bar() has got an incompatible value for x: Y")):
     bar("Y")
 
-nothing_at_all = ((nothing, ) * 1000)
+nothing_at_all = ((type(None), ) * 1000)
 either_nothing = either(either(either(either(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
 
 @typecheck

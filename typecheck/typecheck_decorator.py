@@ -69,8 +69,9 @@ __all__ = [
 
 # check predicates
 
-"optional", "hasattrs", "matches", "callable", "anything", "nothing",
-"tuple_of", "list_of", "dict_of", "one_of", "either",
+"optional", "hasattrs", "matches", "callable", "anything",
+"sequence_of", "tuple_of", "list_of", "dict_of",
+"one_of", "either",
 
 # exceptions
 
@@ -91,7 +92,6 @@ import re
 
 callable = lambda x: hasattr(x, "__call__")
 anything = lambda x: True
-nothing = lambda x: x is None
 
 ################################################################################
 
@@ -232,27 +232,35 @@ matches = RegexChecker
 
 ################################################################################
 
-class TupleOfChecker(Checker):
+class SequenceOfChecker(Checker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
+        self._allowable_types = (list, tuple)
 
     def check(self, value):
-        return isinstance(value, tuple) and \
+        return any([isinstance(value, t) for t in self._allowable_types]) and \
                functools.reduce(lambda r, v: r and self._check.check(v), value, True)
+
+sequence_of = SequenceOfChecker
+
+################################################################################
+
+class TupleOfChecker(SequenceOfChecker):
+
+    def __init__(self, check):
+        self._check = Checker.create(check)
+        self._allowable_types = (tuple,)
 
 tuple_of = TupleOfChecker
 
 ################################################################################
 
-class ListOfChecker(Checker):
+class ListOfChecker(SequenceOfChecker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
-
-    def check(self, value):
-        return isinstance(value, list) and \
-               functools.reduce(lambda r, v: r and self._check.check(v), value, True)
+        self._allowable_types = (list,)
 
 list_of = ListOfChecker
 
