@@ -13,9 +13,9 @@ __all__ = [
 "typecheck", "typecheck_with_exceptions",
 
 # check predicates:
-"optional", "hasattrs", "matches", "anything",
+"optional", "hasattrs", "matches",
 "sequence_of", "tuple_of", "list_of", "dict_of",
-"either_value", "either_type",
+"either_value", "either_type", "anything",
 
 # exceptions:
 "TypeCheckError", "InputParameterError", "ReturnValueError",
