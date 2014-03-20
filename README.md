@@ -28,7 +28,7 @@ that looks at them and does something in order to give them a meaning.
 
 The ``@typecheck`` decorator gives the above annotations the following meaning:
 ``foo1``'s argument ``a`` must have type ``int``,
-``b`` can have any type whatsoever, it will not be checked,
+``b`` has no annotation and can have any type whatsoever, it will not be checked,
 ``c`` must have type string,
 and the function's result must be either
 ``True`` (not ``17`` or ``"yes"`` or ``[3,7,44]`` or some such) or
@@ -55,6 +55,8 @@ The recommended import style is as follows:
   from typecheck import typecheck    # for the decorator
   import typecheck as tc             # for clarity for all other objects
   ```
+
+The remainder of this document will assume these imports.
 
 As for usage style, the idea of this package is not to approximate
 static type checking.
@@ -106,7 +108,8 @@ some parameter PAR:
   The annotation is a tuple or list (rather than a type or a predicate)
   as explained below.
 
-The following subsections explain each of these.
+The following subsections explain each of them.
+The same annotations are valid for results (as opposed to parameters) as well.
 
 
 4.1 Types as annotations
@@ -142,13 +145,13 @@ as its only argument and must return a value that evaluates to
 
 Example:
 
-   ```Python
-   def is_even(n): type(n) is int and n%2 == 0
+    ```Python
+    def is_even(n): type(n) is int and n%2 == 0
 
-   @typecheck
-   def foo3(a:int) -> is_even :
-     return 2*a
-   ```
+    @typecheck
+    def foo3(a:int) -> is_even :
+      return 2*a
+    ```
 
 You can define your own predicate as shown above or use one of the
 predicate generators supplied with the package to create
@@ -218,20 +221,182 @@ But do not worry, their use looks perfectly straightforward eventually.
 
 One of these, ``optional``, you will surely need;
 all others are a bit more specialized.
+As any annotation, all of them can be used for parameters and results alike.
 Here we go:
 
+**tc.optional(annot)**:
 
-   ```Python
-   @typecheck
-   def foo_o1(a:int):
+Takes any other annotation ``annot``.
+Allows all arguments that ``annot`` allows, plus ``None``:
+
+    ```Python
+    @typecheck
+    def foo_o1(a:int):
      pass
-
-   @typecheck
-   def foo_o1(a:int):
+    @typecheck
+    def foo_o2(a:tc.optional(int)):
      pass
-   foo4((1,2), [3, 2.0, 77.0, True])    # OK
+    foo_o1(123)    # OK
+    foo_o2(123)    # OK
+    foo_o1(None)   # Wrong: None does not have type int
+    foo_o2(None)   # OK
+    ```
 
-!!!
+**tc.hasattr(*names)**:
+
+Type-checked duck-typing:
+Takes a variable number of strings containing attribute names.
+Allows all arguments that possess each of those attributes.
+
+    ```Python
+    class FakeIO:
+        def write(self):  pass
+        def flush(self):  pass
+
+    @typecheck
+    def foo_re(a: tc.hasattrs("write", "flush")):  pass
+
+    foo(FakeIO())       # OK
+    del FakeIO.flush
+    foo(FakeIO())       # Wrong, because flush attribute is missing
+    ```
+
+**tc.matches(regexp)**:
+
+Takes a string containing a regular expression.
+Allows all arguments that are strings matched by that regular expression.
+Also works for bytestrings if you use a bytestring regular expression.
+
+    ```Python
+    @typecheck
+    def foo(hexnumber: tc.matches("^[0-9A-F]+$")) -> tc.matches("^[0-9]+$"):
+        return "".join(reversed(k))
+
+    foo("1234")        # OK
+    foo("12AB")        # Wrong: argument OK, but result not allowed
+    ```
+
+**tc.sequence_of(annot)**:
+
+Takes any other annotation ``annot``.
+Allows any argument that is a sequence (tuple or list) in which
+each element is allowed by ``annot``
+
+    ```Python
+    @typecheck
+    def foo_so(s: tc.sequence_of(str)):  pass
+
+    foo_so(["a", "b"])         # OK
+    foo_so(("a", "b"))         # OK, a tuple
+    foo_so([])                 # OK
+    foo_so(["a"])              # OK
+    foo_so("a")                # Wrong: not a sequence in sequence_of sense
+    foo_so(["a", 1])           # Wrong: inhomogeneous
+    ```
+
+**tc.tuple_of(annot)**:
+
+Takes any other annotation ``annot``.
+Allows any argument that is a tuple in which
+each element is allowed by ``annot``
+
+    ```Python
+    @typecheck
+    def foo_so(s: tc.tuple_of(str)):  pass
+
+    foo_so(["a", "b"])         # Wrong: not a tuple
+    foo_so(("a", "b"))         # OK
+    foo_so(())                 # OK
+    foo_so(("a",))             # OK
+    foo_so("a")                # Wrong: not a sequence in sequence_of sense
+    foo_so(("a", 1))           # Wrong: inhomogeneous
+    ```
+
+**tc.list_of(annot)**:
+
+Takes any other annotation ``annot``.
+Allows any argument that is a list in which
+each element is allowed by ``annot``
+
+    ```Python
+    @typecheck
+    def foo_so(s: tc.list_of(str)):  pass
+
+    foo_so(["a", "b"])         # OK
+    foo_so(("a", "b"))         # Wrong, not a list
+    foo_so([])                 # OK
+    foo_so(["a"])              # OK
+    foo_so("a")                # Wrong: not a sequence in list_of sense
+    foo_so(["a", 1])           # Wrong: inhomogeneous
+    ```
+
+**tc.dict_of(keys_annot, values_annot)**:
+
+Takes two annotations ``keys_annot`` and ``values_annot``.
+Allows any argument that is a dictionary in which
+each key is allowed by keys_annot and
+each value is allowed by values_annot.
+
+    ```Python
+    @typecheck
+    def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
+        return { v: k  for k,v in x.items() }
+
+    assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
+    foo({})             # OK: an empty dict is still a dict
+    foo(None)           # Wrong: None is not a dict
+    foo({"1": "2"})     # Wrong: violates values_annot of argument
+                          (also violates keys_annot of result)
+    ```
+
+**tc.either_value(*values)**:
+
+Takes any number of arguments.
+Allows any argument that is equal to any one of them.
+Effectively defines an arbitrary enumeration type.
+
+    ```Python
+    @typecheck
+    def foo_ev(arg: tc.either_value(1, 2.0, "three", [1]*4)): pass
+
+    foo_ev(1)     # OK
+    foo_ev(1.0)   # Wrong: not in values list
+    foo_ev([1,1,1,1])  # OK
+    ```
+
+**tc.either_type(*annots)**:
+
+Takes any number of arguments, each being a valid annotation.
+Allows any argument that is allowed by any one of those annotations.
+Effectively defines an arbitrary union type.
+
+    ```Python
+    @typecheck
+    def foo_et(arg: tc.either_type(int, float, tc.matches("^[0-9]+$")): pass
+
+    foo_et(1)     # OK
+    foo_et(2.0)   # OK
+    foo_et("3")   # OK
+    foo_et("4.0") # Wrong: not allowed by any of the three partial types
+    ```
+
+**tc.anything**:
+
+This is the null typecheck: Will accept any value whatsoever, including None.
+The meaning is effectively the same as attaching no annotation at all,
+but explicitly declaring that no restrictions are intended may be
+desirable for pythonic clarity.
+
+    ```Python
+    @typecheck
+    def foo_any(arg: tc.anything) --> tc.anything:
+      pass
+
+    foo_ev(None)             # OK
+    foo_ev([[[[{"one":True}]]]]])  # OK
+    foo_ev(foo_ev)           # OK
+
+    ```
 
 
 6 Exceptions
@@ -260,8 +425,8 @@ There are essentially only two cases where execution time might
 become a real issue:
 - A non-trivial annotation on a trivial function that is being
   called very frequently in a tight loop.
-- You check the types of all elements of a large data structure
-  many times, but most often they will not actually be accessed.
+- Checking the types of every element of a large data structure
+  many times, although only few of those elements will actually be accessed.
 
 
 Limitations
@@ -271,7 +436,7 @@ Limitations
    Essentially, it is always ``(*args, **kwargs)``.
    This will hopefully one day be changed by using the
    ``decorator`` package or a similar technique.
-1. There should be a way to specify fixed dictionaries or named tuples
+2. There should be a way to specify fixed dictionaries or named tuples
    like one can specify fixed lists or tuples.
    This feature will also some day appear, weather permitting.
 
@@ -294,13 +459,25 @@ Version history
   - Renamed several of the predicate generators.
 
 
+Similar packages
+================
+
+- ``typecheck3`` is based on the same original code of Dmitry Dvoinikov
+  but (as of 0.1.0) lacks the tests, corrections, documentation,
+  and API improvements available here.
+- ``gradual`` has a similar overall approach of using a decorator and annotations.
+  Compared to gradual, typecheck-decorator uses a more pragmatic approach and
+  is far more flexible in expressing types.
+
+
 TO DO
 =====
 
 - use decorator package.
-  Unfortunately, as of 3.4.0 (2014-03-20) this does not claim
-  to the Python3-compatible...
 - add predicate generator for fixed-structure dict and namedtuple
+- add predicate generator for int ranges and float ranges
 - replace ``disable()`` by
   ``mode(decorate=True, typecheck=True, collectioncheck_limit=False)``
-- add more specialized exception messages, e.g. for sequences
+  collectioncheck_limit is an integer for the maximum number of random
+  items to test in a collection (rather than testing all of them)
+- add more specialized exception messages, e.g. for sequences and dicts
