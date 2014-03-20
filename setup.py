@@ -22,7 +22,7 @@ def find_version(*file_paths):
 
 
 # Get the long description from the relevant file
-with codecs.open('README.md', encoding='utf-8') as f:
+with codecs.open('README.txt', encoding='utf-8') as f:
     long_description = f.read()
 
 package_name = "typecheck-decorator"
@@ -92,9 +92,9 @@ setup(
     # To provide executable scripts, use entry points in preference to the
     # "scripts" keyword. Entry points provide cross-platform support and allow
     # pip to create the appropriate form of executable for the target platform.
-    entry_points={
-        'console_scripts': [
-            'sample=sample:main',
-        ],
-    },
+    ### entry_points={
+    #     'console_scripts': [
+    #         'sample=sample:main',
+    #     ],
+    # },
 )
