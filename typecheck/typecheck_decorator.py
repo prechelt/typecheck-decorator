@@ -1,86 +1,28 @@
-#!/usr/bin/env python3
 #-*- coding: iso-8859-1 -*-
 ################################################################################
 #
-# Parameter/return value type checking for Python 3000 using function annotations.
+# Parameter/return value type checking for Python3 using function annotations.
 #
-# (c) 2008-2012, Dmitry Dvoinikov <dmitry@targeted.org>
+# (c) 2008-2012 Dmitry Dvoinikov <dmitry@targeted.org>
+# (c) 2014 Lutz Prechelt
 # Distributed under BSD license.
-#
-# Samples:
-#
-# from typecheck import *
-#
-# @typecheck
-# def foo(i: int, x = None, s: str = "default") -> bool:
-#     ...
-#
-# @typecheck
-# def foo(*args, k1: int, k2: str = "default", k3 = None) -> nothing:
-#     ...
-#
-# @typecheck
-# def foo(ostream: with_attr("write", "flush"), f: optional(callable) = None):
-#     ...
-#
-# divisible_by_three = lambda x: x % 3 == 0
-# @typecheck
-# def foo(i: matches("^[0-9]+$")) -> divisible_by_three:
-#     ...
-#
-# @typecheck
-# def reverse_2_tuple(t: (str, bytes)) -> (bytes, str):
-#     ...
-#
-# @typecheck
-# def reverse_3_list(t: [int, float, bool]) -> [bool, float, int]:
-#     ...
-#
-# @typecheck
-# def extract_from_dict(d: dict_of(int, str), k: tuple_of(int)) -> list_of(str):
-#     ...
-#
-# @typecheck
-# def set_level(level: either_value(1, 2, 3)):
-#     ...
-#
-# @typecheck
-# def accept_number(x: either_type(int, matches("^[0-9]+$"))):
-#     ...
-#
-# @typecheck_with_exceptions(input_parameter_error = MemoryError):
-# def custom_input_error(x: int): # now custom_input_error("foo") throws MemoryError
-#     ...
-#
-# @typecheck_with_exceptions(return_value_error = TypeError):
-# def custom_return_error() -> str: # now custom_return_error() throws TypeError
-#     return 1
-#
-# The (6 times longer) source code with self-tests is available from:
-# http://www.targeted.org/python/recipes/typecheck3000.py
-#
-################################################################################
 
 __all__ = [
 
-# decorators
-
+# decorators:
 "typecheck", "typecheck_with_exceptions",
 
-# check predicates
-
-"optional", "hasattrs", "matches", "callable", "anything",
+# check predicates:
+"optional", "hasattrs", "matches", "anything",
 "sequence_of", "tuple_of", "list_of", "dict_of",
 "either_value", "either_type",
 
-# exceptions
+# exceptions:
+"TypeCheckError", "InputParameterError", "ReturnValueError",
+"TypeCheckSpecificationError",
 
-"TypeCheckError", "TypeCheckSpecificationError",
-"InputParameterError", "ReturnValueError",
-
-# utility methods
-
-"disable",
+# utility methods:
+"disable",  # deprecated
 
 ]
 
@@ -386,5 +328,3 @@ def typecheck_with_exceptions(*, input_parameter_error: optional(_exception_clas
                                             return_value_error = return_value_error)
 
 ################################################################################
-
-
