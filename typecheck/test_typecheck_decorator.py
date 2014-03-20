@@ -1097,31 +1097,31 @@ print("ok")
 
 ############################################################################
 
-print("by_regex: ", end="")
+print("matches: ", end="")
 
-assert by_regex("^abc$")("abc")
-assert not by_regex("^abc$")(b"abc")
-assert not by_regex(b"^abc$")("abc")
-assert by_regex(b"^abc$")(b"abc")
+assert matches("^abc$")("abc")
+assert not matches("^abc$")(b"abc")
+assert not matches(b"^abc$")("abc")
+assert matches(b"^abc$")(b"abc")
 
-assert by_regex(b"^foo\x00bar$")(b"foo\x00bar")
-assert not by_regex(b"^foo\x00bar$")(b"foo\x00baz")
+assert matches(b"^foo\x00bar$")(b"foo\x00bar")
+assert not matches(b"^foo\x00bar$")(b"foo\x00baz")
 
 ###################
 
-assert by_regex("^abc")("abc\n")
-assert by_regex(b"^abc")(b"abc\n")
+assert matches("^abc")("abc\n")
+assert matches(b"^abc")(b"abc\n")
 
-assert not by_regex("^abc$")("abc\n")
-assert not by_regex(b"^abc$")(b"abc\n")
+assert not matches("^abc$")("abc\n")
+assert not matches(b"^abc$")(b"abc\n")
 
-assert not by_regex("^abc$")("abcx")
-assert not by_regex(b"^abc$")(b"abcx")
+assert not matches("^abc$")("abcx")
+assert not matches(b"^abc$")(b"abcx")
 
 ###################
 
 @typecheck
-def foo(*, k: by_regex("^[0-9A-F]+$")) -> by_regex("^[0-9]+$"):
+def foo(*, k: matches("^[0-9A-F]+$")) -> matches("^[0-9]+$"):
     return "".join(reversed(k))
 
 assert foo(k = "1234") == "4321"
@@ -1138,7 +1138,7 @@ with expected(ReturnValueError("foo() has returned an incompatible value: DAB"))
 ###################
 
 @typecheck
-def foo(*, k: (by_regex("^1$"), [by_regex("^x$"), by_regex("^y$")])):
+def foo(*, k: (matches("^1$"), [matches("^x$"), matches("^y$")])):
     return k[0] + k[1][0] + k[1][1]
 
 assert foo(k = ("1", ["x", "y"])) == "1xy"
@@ -1164,7 +1164,7 @@ russian = "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u0
 assert len(russian) == 66
 
 @typecheck
-def foo(s: by_regex("^[{0}]$".format(russian))):
+def foo(s: matches("^[{0}]$".format(russian))):
     return len(s)
 
 for c in russian:
@@ -1176,7 +1176,7 @@ with expected(InputParameterError("foo() has got an incompatible value for s: @"
 ###################
 
 @typecheck
-def numbers_only_please(s: by_regex("^[0-9]+$")):
+def numbers_only_please(s: matches("^[0-9]+$")):
     pass
 
 numbers_only_please("123")
@@ -1186,8 +1186,8 @@ with expected(InputParameterError("numbers_only_please() has got an incompatible
 
 ###################
 
-assert by_regex("^123$")("123") and by_regex("^123$").check("123")
-assert not by_regex("^123$")("foo") and not by_regex("^123$").check("foo")
+assert matches("^123$")("123") and matches("^123$").check("123")
+assert not matches("^123$")("foo") and not matches("^123$").check("foo")
 
 print("ok")
 
@@ -1211,7 +1211,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: []
 ###################
 
 @typecheck
-def foo(x: tuple_of([by_regex("^[01]+$"), int])) -> bool:
+def foo(x: tuple_of([matches("^[01]+$"), int])) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1220,11 +1220,11 @@ assert not foo((["1010", 10], ["0111", 77]))
 
 ###################
 
-assert tuple_of(optional(by_regex("^foo$")))(("foo", None, "foo")) and \
-       tuple_of(optional(by_regex("^foo$"))).check(("foo", None, "foo"))
+assert tuple_of(optional(matches("^foo$")))(("foo", None, "foo")) and \
+       tuple_of(optional(matches("^foo$"))).check(("foo", None, "foo"))
 
-assert not tuple_of(optional(by_regex("^foo$")))(("123", None, "foo")) and \
-       not tuple_of(optional(by_regex("^foo$"))).check(("123", None, "foo"))
+assert not tuple_of(optional(matches("^foo$")))(("123", None, "foo")) and \
+       not tuple_of(optional(matches("^foo$"))).check(("123", None, "foo"))
 
 print("ok")
 
@@ -1248,7 +1248,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: ()
 ###################
 
 @typecheck
-def foo(x: list_of((by_regex("^[01]+$"), int))) -> bool:
+def foo(x: list_of((matches("^[01]+$"), int))) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1257,11 +1257,11 @@ assert not foo([("1010", 10), ("0111", 77)])
 
 ###################
 
-assert list_of(optional(by_regex("^foo$")))(["foo", None, "foo"]) and \
-       list_of(optional(by_regex("^foo$"))).check(["foo", None, "foo"])
+assert list_of(optional(matches("^foo$")))(["foo", None, "foo"]) and \
+       list_of(optional(matches("^foo$"))).check(["foo", None, "foo"])
 
-assert not list_of(optional(by_regex("^foo$")))(["123", None, "foo"]) and \
-       not list_of(optional(by_regex("^foo$"))).check(["123", None, "foo"])
+assert not list_of(optional(matches("^foo$")))(["123", None, "foo"]) and \
+       not list_of(optional(matches("^foo$"))).check(["123", None, "foo"])
 
 print("ok")
 
@@ -1288,7 +1288,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: {1
 ###################
 
 @typecheck
-def foo(*, k: dict_of((int, int), [by_regex("^[0-9]+$"), by_regex("^[0-9]+$")])):
+def foo(*, k: dict_of((int, int), [matches("^[0-9]+$"), matches("^[0-9]+$")])):
     return functools.reduce(lambda r, t: r and str(t[0][0]) == t[1][0] and str(t[0][1]) == t[1][1],
                             k.items(), True)
 
@@ -1361,7 +1361,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: 1"
     foo(1)
 
 @typecheck
-def bar(x: either((int, float), by_regex("^foo$"), one_of(b"X", b"Y"))):
+def bar(x: either((int, float), matches("^foo$"), one_of(b"X", b"Y"))):
     pass
 
 bar((1, 1.0))
@@ -1389,7 +1389,7 @@ with expected(ReturnValueError("biz() has returned an incompatible value: anythi
     biz("anything")
 
 @typecheck
-def accept_number(x: either(int, by_regex("^[0-9]+$"))):
+def accept_number(x: either(int, matches("^[0-9]+$"))):
     return int(x) + 1
 
 assert accept_number(1) == 2

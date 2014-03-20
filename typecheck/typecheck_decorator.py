@@ -25,7 +25,7 @@
 #
 # divisible_by_three = lambda x: x % 3 == 0
 # @typecheck
-# def foo(i: by_regex("^[0-9]+$")) -> divisible_by_three:
+# def foo(i: matches("^[0-9]+$")) -> divisible_by_three:
 #     ...
 #
 # @typecheck
@@ -45,7 +45,7 @@
 #     ...
 #
 # @typecheck
-# def accept_number(x: either(int, by_regex("^[0-9]+$"))):
+# def accept_number(x: either(int, matches("^[0-9]+$"))):
 #     ...
 #
 # @typecheck_with_exceptions(input_parameter_error = MemoryError):
@@ -69,7 +69,7 @@ __all__ = [
 
 # check predicates
 
-"optional", "hasattrs", "by_regex", "callable", "anything", "nothing",
+"optional", "hasattrs", "matches", "callable", "anything", "nothing",
 "tuple_of", "list_of", "dict_of", "one_of", "either",
 
 # exceptions
@@ -212,7 +212,7 @@ hasattrs = HasAttrChecker
 
 ################################################################################
 
-class ByRegexChecker(Checker):
+class RegexChecker(Checker):
 
     _regex_eols = { str: "$", bytes: b"$" }
     _value_eols = { str: "\n", bytes: b"\n" }
@@ -228,7 +228,7 @@ class ByRegexChecker(Checker):
                (not self._regex_eol or not value.endswith(self._value_eol)) and \
                self._regex.match(value) is not None
 
-by_regex = ByRegexChecker
+matches = RegexChecker
 
 ################################################################################
 
