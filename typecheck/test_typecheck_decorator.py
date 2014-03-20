@@ -1386,17 +1386,17 @@ print("ok")
 
 ############################################################################
 
-print("either: ", end="")
+print("either_type: ", end="")
 
 @typecheck
-def foo(x: either()):
+def foo(x: either_type()):
     pass
 
 with expected(InputParameterError("foo() has got an incompatible value for x: 1")):
     foo(1)
 
 @typecheck
-def bar(x: either((int, float), matches("^foo$"), either_value(b"X", b"Y"))):
+def bar(x: either_type((int, float), matches("^foo$"), either_value(b"X", b"Y"))):
     pass
 
 bar((1, 1.0))
@@ -1414,7 +1414,7 @@ with expected(InputParameterError("bar() has got an incompatible value for x: Y"
     bar("Y")
 
 nothing_at_all = ((type(None), ) * 1000)
-either_nothing = either(either(either(either(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
+either_nothing = either_type(either_type(either_type(either_type(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
 
 @typecheck
 def biz(x) -> either_nothing:
@@ -1424,7 +1424,7 @@ with expected(ReturnValueError("biz() has returned an incompatible value: anythi
     biz("anything")
 
 @typecheck
-def accept_number(x: either(int, matches("^[0-9]+$"))):
+def accept_number(x: either_type(int, matches("^[0-9]+$"))):
     return int(x) + 1
 
 assert accept_number(1) == 2

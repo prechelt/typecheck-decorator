@@ -45,7 +45,7 @@
 #     ...
 #
 # @typecheck
-# def accept_number(x: either(int, matches("^[0-9]+$"))):
+# def accept_number(x: either_type(int, matches("^[0-9]+$"))):
 #     ...
 #
 # @typecheck_with_exceptions(input_parameter_error = MemoryError):
@@ -71,7 +71,7 @@ __all__ = [
 
 "optional", "hasattrs", "matches", "callable", "anything",
 "sequence_of", "tuple_of", "list_of", "dict_of",
-"either_value", "either",
+"either_value", "either_type",
 
 # exceptions
 
@@ -294,7 +294,7 @@ either_value = EitherValueChecker
 
 ################################################################################
 
-class EitherChecker(Checker):
+class EitherTypeChecker(Checker):
 
     def __init__(self, *args):
         self._checks = tuple(Checker.create(arg) for arg in args)
@@ -306,7 +306,7 @@ class EitherChecker(Checker):
         else:
             return False
 
-either = EitherChecker
+either_type = EitherTypeChecker
 
 ################################################################################
 
