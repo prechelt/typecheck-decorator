@@ -150,27 +150,21 @@ Checker.register(inspect.isclass, TypeChecker)
 
 ################################################################################
 
-istupleoid = lambda x: isinstance(x, ().__class__) or isinstance(x, [].__class__)
+issequence = lambda x: isinstance(x, tuple) or isinstance(x, list)
 
-class TupleChecker(Checker):
+class FixedSequenceChecker(Checker):
 
     def __init__(self, the_sequence):
         self._cls = type(the_sequence)
         self._checks = tuple(Checker.create(x) for x in iter(the_sequence))
 
-    def check(self, value):
+    def check(self, values):
         """specifying a plain tuple allows arguments that are tuples or lists;
         specifying a specialized (subclassed) tuple allows only that type;
         specifying a list allows only that list type."""
-        spec_is_plain_tuple = self._cls == ().__class__
-        spec_is_list = issubclass(self._cls, [].__class__)
-        spec_is_specialized_tuple = (issubclass(self._cls, ().__class__) and
-                                     not spec_is_plain_tuple)
-        if ((spec_is_plain_tuple and istupleoid(value)) or
-            (spec_is_specialized_tuple and isinstance(value, self._cls)) or
-            (spec_is_list and isinstance(value, self._cls))):
-            # actual element type checking is warranted:
-            values = tuple(iter(value))
+        if not issequence(values):
+            return False
+        if self._cls == tuple or isinstance(values, self._cls):
             if len(values) != len(self._checks):  return False
             for thischeck, thisvalue in zip(self._checks, values):
                 if not thischeck(thisvalue): return False
@@ -178,7 +172,7 @@ class TupleChecker(Checker):
         else:
             return False
 
-Checker.register(istupleoid, TupleChecker)
+Checker.register(issequence, FixedSequenceChecker)
 
 ################################################################################
 

@@ -484,7 +484,7 @@ print("default vs. checked args (randomly generated): ", end="")
 test_passes = 0
 
 start = time()
-while time() < start + 3.0:
+while time() < start + 1.0:
 
     N = randint(1, 10)
     DN = randint(0, N)
@@ -784,7 +784,7 @@ print("default vs. checked kwargs (randomly generated): ", end="")
 test_passes = 0
 
 start = time()
-while time() < start + 3.0:
+while time() < start + 1.0:
 
     N = randint(1, 10)
 
@@ -881,28 +881,24 @@ print("ok")
 
 ############################################################################
 
-print("IterableChecker: ", end="")
+print("FixedSequenceChecker: ", end="")
 
 @typecheck
-def foo(a: () = (), *, k: optional(()) = ()) -> ((), ()):
-    return a, k
+def foo(a: (int,str) = (1,"!"), *, k: optional(()) = ()) -> (str, ()):
+    return a[1], k
 
-assert foo() == ((), ())
-assert foo(()) == ((), ())
-assert foo(k = ()) == ((), ())
-assert foo((), k = ()) == ((), ())
-
-with expected(InputParameterError("foo() has got an incompatible value for a: []")):
-    foo([])
+assert foo() == ("!", ())
+assert foo((2,"x")) == ("x", ())
+assert foo(k = ()) == ("!", ())
+assert foo((33,"44"), k = ()) == ("44", ())
+assert foo([3,"4"]) == ("4", ())
+assert foo(k = []) == ("!", [])
 
 with expected(InputParameterError("foo() has got an incompatible value for a: (1,)")):
     foo((1, ))
 
-with expected(InputParameterError("foo() has got an incompatible value for k: []")):
-    foo(k = [])
-
-with expected(InputParameterError("foo() has got an incompatible value for k: (1,)")):
-    foo(k = (1, ))
+with expected(InputParameterError("foo() has got an incompatible value for k: (1, 2)")):
+    foo(k = (1, 2))
 
 ###################
 
