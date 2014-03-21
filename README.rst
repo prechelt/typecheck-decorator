@@ -1,9 +1,4 @@
-typecheck-decorator
-###################
-
-Lutz Prechelt, 2014
-
-A decorator for functions, `@typecheck`, to be used together with
+A decorator for functions, ``@typecheck``, to be used together with
 Python3 annotations on function parameters and function results.
 The decorator will perform dynamic argument type checking for every call to the function.
 
@@ -34,14 +29,15 @@ and the function's result must be either
 If any argument has the wrong type, a ``TypeCheckError`` exception will be raised.
 Class types, collection types, fixed-length collections and
 type predicates can be annotated as well.
-Here is a complex example:
+Here is a more complex example:
 
 ::
+
   from typecheck import typecheck
   import typecheck as tc
 
   @typecheck
-  def foo2(record:(int,int,bool), rgb:tc.matches("^[rgb]$") -> tc.either_type(int,float) :
+  def foo2(record:(int,int,bool), rgb:tc.matches("^[rgb]$")) -> tc.either_type(int,float) :
       a = record[0]; b = record[1]
       return a/b if (a/b == float(a)/b) else float(a)/b
 
@@ -50,14 +46,18 @@ Here is a complex example:
   foo2((4,10,1), "rg")     # Wrong: 1 is not a bool, string is too long
   foo2(None,     "R")      # Wrong: None is no tuple, string has illegal character
 
-The annotations mean that ``record`` is a 3-tuple of two ints and
+These annotations mean that ``record`` is a 3-tuple of two ints and
 an actual bool and ``rgb`` is a one-character string that is
-either "r" or "g" or "b".
+either "r" or "g" or "b" by virtue of a regular expression test.
 The result will be a number that can be either int or float.
 
 Other kinds of annotations:
+
 - ``tc.optional(int)`` will allow int and None,
 - ``tc.either_value(1, 2.0, "three")`` allows to define arbitrary enumeration types,
 - ``tc.dict_of(str, tc.list_of(Person))`` describes dictionaries where all
   keys are strings and all values are homogeneous lists of Persons,
 - and so on.
+
+Find the documentation at
+https://github.com/prechelt/typecheck-decorator
