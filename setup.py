@@ -22,7 +22,7 @@ def find_version(*file_paths):
 
 
 # Get the long description from the relevant file
-with codecs.open('README.txt', encoding='utf-8') as f:
+with codecs.open('README.rst', encoding='utf-8') as f:
     long_description = f.read()
 
 package_name = "typecheck-decorator"
@@ -41,7 +41,7 @@ setup(
     author_email='prechelt@inf.fu-berlin.de',
 
     # Choose your license
-    license='BSD',
+    license='BSD License',
 
     classifiers=[
         # How mature is this project? Common values are
@@ -52,6 +52,8 @@ setup(
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
+        'Topic :: Software Development :: Quality Assurance',
+        'Topic :: Software Development :: Documentation',
 
         # Pick your license as you wish (should match "license" above)
         'License :: OSI Approved :: BSD License',
