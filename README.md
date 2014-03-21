@@ -245,11 +245,11 @@ Allows all arguments that ``annot`` allows, plus ``None``:
    foo_o2(None)   # OK
    ```
 
-**tc.hasattr(*names)**:
+**tc.hasattrs(*names)**:
 
 Type-checked duck-typing:
 Takes a variable number of strings containing attribute names.
-Allows all arguments that possess each of those attributes.
+Allows all arguments that possess every one of those attributes.
 
    ```Python
    class FakeIO:
@@ -263,15 +263,16 @@ Allows all arguments that possess each of those attributes.
    foo(FakeIO())       # Wrong, because flush attribute is missing
    ```
 
-**tc.matches(regexp)**:
+**tc.has(regexp)**:
 
-Takes a string containing a regular expression.
-Allows all arguments that are strings matched by that regular expression.
+Takes a string containing a regular expression string.
+Allows all arguments that are strings and contain what is described
+by that regular expression (as defined by ``re.search``).
 Also works for bytestrings if you use a bytestring regular expression.
 
    ```Python
    @typecheck
-   def foo(hexnumber: tc.matches("^[0-9A-F]+$")) -> tc.matches("^[0-9]+$"):
+   def foo(hexnumber: tc.has("^[0-9A-F]+$")) -> tc.has("^[0-9]+$"):
        return "".join(reversed(k))
 
    foo("1234")        # OK
@@ -372,15 +373,63 @@ Effectively defines an arbitrary, ad-hoc enumeration type.
 Takes any number of arguments, each being a valid annotation.
 Allows any argument that is allowed by any one of those annotations.
 Effectively defines an arbitrary union type.
+You could think of it as an n-ary ``or``.
 
    ```Python
    @typecheck
-   def foo_et(arg: tc.any(int, float, tc.matches("^[0-9]+$")): pass
+   def foo_any(arg: tc.any(int, float, tc.matches("^[0-9]+$")): pass
 
-   foo_et(1)     # OK
-   foo_et(2.0)   # OK
-   foo_et("3")   # OK
-   foo_et("4.0") # Wrong: not allowed by any of the three partial types
+   foo_any(1)     # OK
+   foo_any(2.0)   # OK
+   foo_any("3")   # OK
+   foo_any("4.0") # Wrong: not allowed by any of the three partial types
+   ```
+
+**tc.all(*annots)**:
+
+Takes any number of arguments, each being a valid annotation.
+Allows any argument that is allowed by every one of those annotations.
+Effectively defines an arbitrary intersection type.
+You could think of it as an n-ary ``and``.
+
+   ```Python
+   def complete_blocks(arg):
+       return len(arg) % 512 == 0
+
+   @typecheck
+   def foo_all(arg: tc.all(tc.any(bytes,bytearray), complete_blocks)): pass
+
+   foo_all(b"x" * 512)              # OK
+   foo_all(bytearray(b"x" * 1024))  # OK
+   foo_all("x" * 512)      # Wrong: not a bytearray or bytes
+   foo_all(b"x" * 1012)    # Wrong: no complete blocks
+   ```
+
+**tc.none(*annots)**:
+
+Takes any number of arguments, each being a valid annotation.
+Allows any argument that is allowed by no single one of those annotations.
+Effectively defines a type taboo.
+You could think of it as "not any" or as "all not".
+
+   ```Python
+   class TestCase:
+       pass
+   class MyCheckers(TestCase):
+       pass
+   class AddressTest:
+       pass
+
+   def classname_contains_Test(arg):
+      return type(arg).__name__.find("Test") >= 0
+
+   @typecheck
+   def no_tests_please(arg: tc.none(TestCase, classname_contains_Test)): pass
+
+   no_tests_please("stuff")        # OK
+   no_tests_please(TestCase())     # Wrong: not wanted here
+   no_tests_please(MyCheckers())   # Wrong: superclass not wanted here
+   no_tests_please(AddressTest())  # Wrong: suspicious class name
    ```
 
 **tc.anything**:
@@ -389,6 +438,9 @@ This is the null typecheck: Will accept any value whatsoever, including None.
 The meaning is effectively the same as attaching no annotation at all,
 but explicitly declaring that no restrictions are intended may be
 desirable for pythonic clarity.
+Note: This is equivalent to ``tc.all()``, that is, all-of-nothing,
+and also equivalent to ``tc.none()``, that is, none-of-nothing,
+but is much less confusing.
 
    ```Python
    @typecheck

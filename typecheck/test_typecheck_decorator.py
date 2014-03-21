@@ -10,7 +10,9 @@ from random import randint, shuffle
 from time import time
 from traceback import extract_stack
 
-from typecheck import *
+from typecheck import typecheck
+import typecheck as tc
+from typecheck import InputParameterError, ReturnValueError, TypeCheckSpecificationError
 
 ############################################################################
 
@@ -103,7 +105,7 @@ with expected(InputParameterError("foo() has got an incompatible value for s: ''
     foo("")
 
 @typecheck
-def foo(*, k: optional(lambda s: s != "") = None):
+def foo(*, k: tc.optional(lambda s: s != "") = None):
     return k
 
 assert foo() is None
@@ -196,7 +198,7 @@ assert foo() == [0, 1, 2, 3]
 ###################
 
 @typecheck
-def foo(*, k: optional(list) = []):
+def foo(*, k: tc.optional(list) = []):
     k.append(len(k))
     return k
 
@@ -546,7 +548,7 @@ assert foo(a = "b") == "b"
 ###################
 
 @typecheck
-def foo(*, a: optional(str) = "a"):
+def foo(*, a: tc.optional(str) = "a"):
     return a
 
 assert foo() == "a"
@@ -743,7 +745,7 @@ with expected(InputParameterError("pxc_q2c() has got an incompatible value for q
 with expected(InputParameterError("pxc_q2c() has got an incompatible value for p: <no value>")):
     pxc_q2c(q = 2)
 
-#TODO: should optional() be required when a default is given?
+#TODO: should tc.optional() be required when a default is given?
 #with expected(InputParameterError("pxc_q2c() has got an incompatible value for q: <no value>")):
 #    pxc_q2c()
 
@@ -771,7 +773,7 @@ with expected(InputParameterError("p1c_q2c() has got an incompatible value for q
 with expected(InputParameterError("p1c_q2c() has got an incompatible value for p: <no value>")):
     p1c_q2c(q = 2)
 
-# TODO: optional() required despite default???
+# TODO: tc.optional() required despite default???
 #with expected(InputParameterError("p1c_q2c() has got an incompatible value for q: <no value>")):
 #    p1c_q2c()
 
@@ -792,7 +794,7 @@ while time() < start + 1.0:
     chkd = [ randint(0, 1) for i in range(N) ]
     deft = [ randint(0, 1) for i in range(N) ]
 
-    def_kwrs = ", ".join("{0}{1}{2}".format(k, c and ": optional(int)" or "", d and " = {0}".format(i) or "")
+    def_kwrs = ", ".join("{0}{1}{2}".format(k, c and ": tc.optional(int)" or "", d and " = {0}".format(i) or "")
                          for (i, (k, c, d)) in enumerate(zip(kwrs, chkd, deft)))
     sum_kwrs = " + ".join(kwrs)
 
@@ -884,7 +886,7 @@ print("ok")
 print("FixedSequenceChecker: ", end="")
 
 @typecheck
-def foo(a: (int,str) = (1,"!"), *, k: optional(()) = ()) -> (str, ()):
+def foo(a: (int,str) = (1,"!"), *, k: tc.optional(()) = ()) -> (str, ()):
     return a[1], k
 
 assert foo() == ("!", ())
@@ -903,7 +905,7 @@ with expected(InputParameterError("foo() has got an incompatible value for k: (1
 ###################
 
 @typecheck
-def foo(a: [] = [], *, k: optional([]) = None) -> ([], optional([])):
+def foo(a: [] = [], *, k: tc.optional([]) = None) -> ([], tc.optional([])):
     return a, k
 
 assert foo() == ([], None)
@@ -943,7 +945,7 @@ with expected(ReturnValueError("foo() has returned an incompatible value: (1,)")
 ###################
 
 @typecheck
-def foo(*, k: optional([[[[lambda x: x % 3 == 1]]]]) = [[[[4]]]]):
+def foo(*, k: tc.optional([[[[lambda x: x % 3 == 1]]]]) = [[[[4]]]]):
     return k[0][0][0][0]
 
 assert foo() % 3 == 1
@@ -1015,7 +1017,7 @@ with expected(InputParameterError("foo() has got an incompatible value for b: 0"
     foo(0)
 
 @typecheck
-def foo(*, b: optional(bool) = None) -> bool:
+def foo(*, b: tc.optional(bool) = None) -> bool:
     return b
 
 assert foo(b = False) is False
@@ -1033,7 +1035,7 @@ with expected(TypeCheckSpecificationError("the default value for a is incompatib
         return a
 
 @typecheck
-def foo(a: optional(not_none) = None): # note how optional overrides the not_none
+def foo(a: tc.optional(not_none) = None): # note how optional overrides the not_none
     return a
 
 assert foo() is None
@@ -1045,7 +1047,7 @@ with expected(TypeCheckSpecificationError("the default value for k is incompatib
         return k
 
 @typecheck
-def foo(*, k: optional(not_none) = None): # note how optional overrides the not_none
+def foo(*, k: tc.optional(not_none) = None): # note how optional overrides the not_none
     return k
 
 assert foo() is None
@@ -1059,7 +1061,7 @@ with expected(ReturnValueError("foo() has returned an incompatible value: None")
     foo()
 
 @typecheck
-def foo(x = None) -> optional(not_none): # note how optional overrides the not_none
+def foo(x = None) -> tc.optional(not_none): # note how optional overrides the not_none
     return x
 
 assert foo() is None
@@ -1078,7 +1080,7 @@ class FakeIO:
         pass
 
 @typecheck
-def foo(a: hasattrs("write", "flush")):
+def foo(a: tc.hasattrs("write", "flush")):
     pass
 
 foo(FakeIO())
@@ -1090,38 +1092,38 @@ with expected(InputParameterError("foo() has got an incompatible value for a: <"
 
 ###################
 
-assert hasattrs("__class__")(int) and hasattrs("__class__").check(int)
-assert not hasattrs("foo")(int) and not hasattrs("foo").check(int)
+assert tc.hasattrs("__class__")(int) and tc.hasattrs("__class__").check(int)
+assert not tc.hasattrs("foo")(int) and not tc.hasattrs("foo").check(int)
 
 print("ok")
 
 ############################################################################
 
-print("matches: ", end="")
+print("has: ", end="")
 
-assert matches("^abc$")("abc")
-assert not matches("^abc$")(b"abc")
-assert not matches(b"^abc$")("abc")
-assert matches(b"^abc$")(b"abc")
+assert tc.has("^abc$")("abc")
+assert not tc.has("^abc$")(b"abc")
+assert not tc.has(b"^abc$")("abc")
+assert tc.has(b"^abc$")(b"abc")
 
-assert matches(b"^foo\x00bar$")(b"foo\x00bar")
-assert not matches(b"^foo\x00bar$")(b"foo\x00baz")
+assert tc.has(b"^foo\x00bar$")(b"foo\x00bar")
+assert not tc.has(b"^foo\x00bar$")(b"foo\x00baz")
 
 ###################
 
-assert matches("^abc")("abc\n")
-assert matches(b"^abc")(b"abc\n")
+assert tc.has("^abc")("abc\n")
+assert tc.has(b"^abc")(b"abc\n")
 
-assert not matches("^abc$")("abc\n")
-assert not matches(b"^abc$")(b"abc\n")
+assert not tc.has("^abc$")("abc\n")
+assert not tc.has(b"^abc$")(b"abc\n")
 
-assert not matches("^abc$")("abcx")
-assert not matches(b"^abc$")(b"abcx")
+assert not tc.has("^abc$")("abcx")
+assert not tc.has(b"^abc$")(b"abcx")
 
 ###################
 
 @typecheck
-def foo(*, k: matches("^[0-9A-F]+$")) -> matches("^[0-9]+$"):
+def foo(*, k: tc.has("^[0-9A-F]+$")) -> tc.has("^[0-9]+$"):
     return "".join(reversed(k))
 
 assert foo(k = "1234") == "4321"
@@ -1138,7 +1140,7 @@ with expected(ReturnValueError("foo() has returned an incompatible value: DAB"))
 ###################
 
 @typecheck
-def foo(*, k: (matches("^1$"), [matches("^x$"), matches("^y$")])):
+def foo(*, k: (tc.has("^1$"), [tc.has("^x$"), tc.has("^y$")])):
     return k[0] + k[1][0] + k[1][1]
 
 assert foo(k = ("1", ["x", "y"])) == "1xy"
@@ -1164,7 +1166,7 @@ russian = "\u0410\u0411\u0412\u0413\u0414\u0415\u0401\u0416\u0417\u0418\u0419\u0
 assert len(russian) == 66
 
 @typecheck
-def foo(s: matches("^[{0}]$".format(russian))):
+def foo(s: tc.has("^[{0}]$".format(russian))):
     return len(s)
 
 for c in russian:
@@ -1176,7 +1178,7 @@ with expected(InputParameterError("foo() has got an incompatible value for s: @"
 ###################
 
 @typecheck
-def numbers_only_please(s: matches("^[0-9]+$")):
+def numbers_only_please(s: tc.has("^[0-9]+$")):
     pass
 
 numbers_only_please("123")
@@ -1186,8 +1188,8 @@ with expected(InputParameterError("numbers_only_please() has got an incompatible
 
 ###################
 
-assert matches("^123$")("123") and matches("^123$").check("123")
-assert not matches("^123$")("foo") and not matches("^123$").check("foo")
+assert tc.has("^123$")("123") and tc.has("^123$").check("123")
+assert not tc.has("^123$")("foo") and not tc.has("^123$").check("foo")
 
 print("ok")
 
@@ -1196,7 +1198,7 @@ print("ok")
 print("tuple_of: ", end="")
 
 @typecheck
-def foo(x: tuple_of(int)) -> tuple_of(float):
+def foo(x: tc.tuple_of(int)) -> tc.tuple_of(float):
     return tuple(map(float, x))
 
 assert foo(()) == ()
@@ -1211,7 +1213,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: []
 ###################
 
 @typecheck
-def foo(x: tuple_of([matches("^[01]+$"), int])) -> bool:
+def foo(x: tc.tuple_of([tc.has("^[01]+$"), int])) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1220,11 +1222,11 @@ assert not foo((["1010", 10], ["0111", 77]))
 
 ###################
 
-assert tuple_of(optional(matches("^foo$")))(("foo", None, "foo")) and \
-       tuple_of(optional(matches("^foo$"))).check(("foo", None, "foo"))
+assert tc.tuple_of(tc.optional(tc.has("^foo$")))(("foo", None, "foo")) and \
+       tc.tuple_of(tc.optional(tc.has("^foo$"))).check(("foo", None, "foo"))
 
-assert not tuple_of(optional(matches("^foo$")))(("123", None, "foo")) and \
-       not tuple_of(optional(matches("^foo$"))).check(("123", None, "foo"))
+assert not tc.tuple_of(tc.optional(tc.has("^foo$")))(("123", None, "foo")) and \
+       not tc.tuple_of(tc.optional(tc.has("^foo$"))).check(("123", None, "foo"))
 
 print("ok")
 
@@ -1233,7 +1235,7 @@ print("ok")
 print("list_of: ", end="")
 
 @typecheck
-def foo(x: list_of(int)) -> list_of(float):
+def foo(x: tc.list_of(int)) -> tc.list_of(float):
     return list(map(float, x))
 
 assert foo([]) == []
@@ -1248,7 +1250,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: ()
 ###################
 
 @typecheck
-def foo(x: list_of((matches("^[01]+$"), int))) -> bool:
+def foo(x: tc.list_of((tc.has("^[01]+$"), int))) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1257,11 +1259,11 @@ assert not foo([("1010", 10), ("0111", 77)])
 
 ###################
 
-assert list_of(optional(matches("^foo$")))(["foo", None, "foo"]) and \
-       list_of(optional(matches("^foo$"))).check(["foo", None, "foo"])
+assert tc.list_of(tc.optional(tc.has("^foo$")))(["foo", None, "foo"]) and \
+       tc.list_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "foo"])
 
-assert not list_of(optional(matches("^foo$")))(["123", None, "foo"]) and \
-       not list_of(optional(matches("^foo$"))).check(["123", None, "foo"])
+assert not tc.list_of(tc.optional(tc.has("^foo$")))(["123", None, "foo"]) and \
+       not tc.list_of(tc.optional(tc.has("^foo$"))).check(["123", None, "foo"])
 
 print("ok")
 
@@ -1270,7 +1272,7 @@ print("ok")
 print("sequence_of: ", end="")
 
 @typecheck
-def foo(x: sequence_of(int)) -> sequence_of(float):
+def foo(x: tc.sequence_of(int)) -> tc.sequence_of(float):
     return list(map(float, x))
 
 assert foo([]) == []
@@ -1283,7 +1285,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: ['
 ###################
 
 @typecheck
-def foo(x: sequence_of((matches("^[01]+$"), int))) -> bool:
+def foo(x: tc.sequence_of((tc.has("^[01]+$"), int))) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1292,11 +1294,11 @@ assert not foo([("1010", 10), ("0111", 77)])
 
 ###################
 
-assert sequence_of(optional(matches("^foo$")))(["foo", None, "foo"]) and \
-       sequence_of(optional(matches("^foo$"))).check(["foo", None, "foo"])
+assert tc.sequence_of(tc.optional(tc.has("^foo$")))(["foo", None, "foo"]) and \
+       tc.sequence_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "foo"])
 
-assert not sequence_of(optional(matches("^foo$")))(["123", None, "foo"]) and \
-       not sequence_of(optional(matches("^foo$"))).check(["foo", None, "1234"])
+assert not tc.sequence_of(tc.optional(tc.has("^foo$")))(["123", None, "foo"]) and \
+       not tc.sequence_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "1234"])
 
 print("ok")
 
@@ -1305,7 +1307,7 @@ print("ok")
 print("dict_of: ", end="")
 
 @typecheck
-def foo(x: dict_of(int, str)) -> dict_of(str, int):
+def foo(x: tc.dict_of(int, str)) -> tc.dict_of(str, int):
     return { v: k for k, v in x.items() }
 
 assert foo({}) == {}
@@ -1323,7 +1325,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: {1
 ###################
 
 @typecheck
-def foo(*, k: dict_of((int, int), [matches("^[0-9]+$"), matches("^[0-9]+$")])):
+def foo(*, k: tc.dict_of((int, int), [tc.has("^[0-9]+$"), tc.has("^[0-9]+$")])):
     return functools.reduce(lambda r, t: r and str(t[0][0]) == t[1][0] and str(t[0][1]) == t[1][1],
                             k.items(), True)
 
@@ -1342,11 +1344,11 @@ with expected(InputParameterError("foo() has got an incompatible value for k: {(
 
 ###################
 
-assert dict_of(int, optional(str))({ 1: "foo", 2: None }) and \
-       dict_of(int, optional(str)).check({ 1: "foo", 2: None })
+assert tc.dict_of(int, tc.optional(str))({ 1: "foo", 2: None }) and \
+       tc.dict_of(int, tc.optional(str)).check({ 1: "foo", 2: None })
 
-assert not dict_of(int, optional(str))({ None: "foo", 2: None }) and \
-       not dict_of(int, optional(str)).check({ None: "foo", 2: None })
+assert not tc.dict_of(int, tc.optional(str))({ None: "foo", 2: None }) and \
+       not tc.dict_of(int, tc.optional(str)).check({ None: "foo", 2: None })
 
 print("ok")
 
@@ -1355,7 +1357,7 @@ print("ok")
 print("enum: ", end="")
 
 @typecheck
-def foo(x: enum(int, 1)) -> enum(1, int):
+def foo(x: tc.enum(int, 1)) -> tc.enum(1, int):
     return x
 
 assert foo(1) == 1
@@ -1365,7 +1367,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: 2"
     foo(2)
 
 @typecheck
-def bar(*, x: enum(None)) -> enum():
+def bar(*, x: tc.enum(None)) -> tc.enum():
     return x
 
 with expected(ReturnValueError("bar() has returned an incompatible value: None")):
@@ -1373,11 +1375,11 @@ with expected(ReturnValueError("bar() has returned an incompatible value: None")
 
 with expected(TypeCheckSpecificationError("the default value for x is incompatible with its typecheck")):
     @typecheck
-    def foo(x: enum(1) = 2):
+    def foo(x: tc.enum(1) = 2):
         pass
 
 @typecheck
-def foo(x: optional(enum(1, 2)) = 2):
+def foo(x: tc.optional(tc.enum(1, 2)) = 2):
     return x
 
 assert foo() == 2
@@ -1389,14 +1391,14 @@ print("ok")
 print("any: ", end="")
 
 @typecheck
-def foo(x: any()):
+def foo(x: tc.any()):
     pass
 
 with expected(InputParameterError("foo() has got an incompatible value for x: 1")):
     foo(1)
 
 @typecheck
-def bar(x: any((int, float), matches("^foo$"), enum(b"X", b"Y"))):
+def bar(x: tc.any((int, float), tc.has("^foo$"), tc.enum(b"X", b"Y"))):
     pass
 
 bar((1, 1.0))
@@ -1414,7 +1416,7 @@ with expected(InputParameterError("bar() has got an incompatible value for x: Y"
     bar("Y")
 
 nothing_at_all = ((type(None), ) * 1000)
-either_nothing = any(any(any(any(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
+either_nothing = tc.any(tc.any(tc.any(tc.any(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
 
 @typecheck
 def biz(x) -> either_nothing:
@@ -1424,7 +1426,7 @@ with expected(ReturnValueError("biz() has returned an incompatible value: anythi
     biz("anything")
 
 @typecheck
-def accept_number(x: any(int, matches("^[0-9]+$"))):
+def accept_number(x: tc.any(int, tc.has("^[0-9]+$"))):
     return int(x) + 1
 
 assert accept_number(1) == 2
@@ -1437,23 +1439,107 @@ print("ok")
 
 ############################################################################
 
+print("all: ", end="")
+
+@typecheck
+def foo(x: tc.all()):
+    pass
+
+foo(foo)   # an empty all() accepts anything
+
+@typecheck
+def bar(x: tc.all(tc.has("abcdef"), tc.has("defghi"), tc.has("^abc"))):
+    pass
+
+bar("abcdefghijklm")
+
+with expected(InputParameterError("bar() has got an incompatible value for x:  abcdefghi")):
+    bar(" abcdefghi")
+with expected(InputParameterError("bar() has got an incompatible value for x: abc defghi")):
+    bar("abc defghi")
+
+def complete_blocks(arg):
+   return len(arg) % 512 == 0
+@typecheck
+def foo_all(arg: tc.all(tc.any(bytes,bytearray), complete_blocks)): pass
+
+foo_all(b"x" * 512)              # OK
+foo_all(bytearray(b"x" * 1024))  # OK
+
+with expected(InputParameterError("foo_all() has got an incompatible value for arg: xxx")):
+    foo_all("x" * 512)      # Wrong: not a bytearray or bytes
+
+with expected(InputParameterError("foo_all() has got an incompatible value for arg: b'xxx")):
+    foo_all(b"x" * 1012)    # Wrong: no complete blocks
+
+print("ok")
+
+############################################################################
+
+print("none: ", end="")
+
+@typecheck
+def foo(x: tc.none()):
+    pass
+
+foo(foo)   # an empty none() accepts anything
+
+@typecheck
+def taboo(x: tc.none(tc.has("foo"), tc.has("bar"))):
+    pass
+
+taboo("boofar")
+
+with expected(InputParameterError("taboo() has got an incompatible value for x: foofar")):
+    taboo("foofar")
+with expected(InputParameterError("taboo() has got an incompatible value for x: boobar-ism")):
+    taboo("boobar-ism")
+
+class TestCase:
+    pass
+class MyCheckers(TestCase):
+    pass
+class AddressTest:
+    pass
+
+def classname_contains_Test(arg):
+   return type(arg).__name__.find("Test") >= 0
+
+@typecheck
+def no_tests_please(arg: tc.none(TestCase, classname_contains_Test)): pass
+
+no_tests_please("stuff")        # OK
+
+with expected(InputParameterError("no_tests_please() has got an incompatible value for arg: <")):
+    no_tests_please(TestCase())     # Wrong: not wanted here
+
+with expected(InputParameterError("no_tests_please() has got an incompatible value for arg: <")):
+    no_tests_please(MyCheckers())   # Wrong: superclass not wanted here
+
+with expected(InputParameterError("no_tests_please() has got an incompatible value for arg: <")):
+    no_tests_please(AddressTest())  # Wrong: suspicious class name
+
+print("ok")
+
+############################################################################
+
 print("custom exceptions: ", end="")
 
-@typecheck_with_exceptions(input_parameter_error = ZeroDivisionError)
+@tc.typecheck_with_exceptions(input_parameter_error = ZeroDivisionError)
 def foo(x: int):
     pass
 
 with expected(ZeroDivisionError("foo() has got an incompatible value for x: 1")):
     foo("1")
 
-@typecheck_with_exceptions(return_value_error = MemoryError)
+@tc.typecheck_with_exceptions(return_value_error = MemoryError)
 def foo(x) -> str:
     return x
 
 with expected(MemoryError):
     foo(1)
 
-@typecheck_with_exceptions(input_parameter_error = TypeError, return_value_error = TypeError)
+@tc.typecheck_with_exceptions(input_parameter_error = TypeError, return_value_error = TypeError)
 def foo(x: int) -> int:
     return x
 
@@ -1461,13 +1547,13 @@ assert foo(1) == 1
 
 with expected(InputParameterError("typecheck_with_exceptions() has got an incompatible "
                                   "value for input_parameter_error: <class 'int'>")):
-    @typecheck_with_exceptions(input_parameter_error = int)
+    @tc.typecheck_with_exceptions(input_parameter_error = int)
     def foo():
         pass
 
 with expected(InputParameterError("typecheck_with_exceptions() has got an incompatible "
                                   "value for return_value_error: <class 'int'>")):
-    @typecheck_with_exceptions(return_value_error = int)
+    @tc.typecheck_with_exceptions(return_value_error = int)
     def foo():
         pass
 
@@ -1481,7 +1567,7 @@ print("disable: ", end="")
 def foo(x: int):
     pass
 
-disable() # disable-only switch, no further proxying is performed
+tc.disable() # disable-only switch, no further proxying is performed
 
 @typecheck
 def bar(x: int):

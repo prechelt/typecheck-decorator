@@ -13,9 +13,9 @@ __all__ = [
 "typecheck", "typecheck_with_exceptions",
 
 # check predicates:
-"optional", "hasattrs", "matches",
+"optional", "hasattrs", "has",
 "sequence_of", "tuple_of", "list_of", "dict_of",
-"enum", "any", "anything",
+"enum", "any", "all", "none", "anything",
 
 # exceptions:
 "TypeCheckError", "InputParameterError", "ReturnValueError",
@@ -28,6 +28,7 @@ __all__ = [
 
 ################################################################################
 
+import builtins
 import inspect
 import functools
 import re
@@ -148,7 +149,7 @@ class HasAttrChecker(Checker):
         self._attrs = attrs
 
     def check(self, value):
-        return all([hasattr(value, attr) for attr in self._attrs])
+        return builtins.all([hasattr(value, attr) for attr in self._attrs])
 
 hasattrs = HasAttrChecker
 
@@ -168,9 +169,9 @@ class RegexChecker(Checker):
     def check(self, value):
         return type(value) is self._regex_t and \
                (not self._regex_eol or not value.endswith(self._value_eol)) and \
-               self._regex.match(value) is not None
+               self._regex.search(value) is not None
 
-matches = RegexChecker
+has = RegexChecker
 
 ################################################################################
 
@@ -181,7 +182,7 @@ class SequenceOfChecker(Checker):
         self._allowable_types = (list, tuple)
 
     def check(self, value):
-        return any([isinstance(value, t) for t in self._allowable_types]) and \
+        return builtins.any([isinstance(value, t) for t in self._allowable_types]) and \
                functools.reduce(lambda r, v: r and self._check.check(v), value, True)
 
 sequence_of = SequenceOfChecker
@@ -249,6 +250,38 @@ class EitherTypeChecker(Checker):
             return False
 
 any = EitherTypeChecker
+
+################################################################################
+
+class EveryTypeChecker(Checker):
+
+    def __init__(self, *args):
+        self._checks = tuple(Checker.create(arg) for arg in args)
+
+    def check(self, value):
+        for c in self._checks:
+            if not c.check(value):
+                return False
+        else:
+            return True
+
+all = EveryTypeChecker
+
+################################################################################
+
+class NoTypeChecker(Checker):
+
+    def __init__(self, *args):
+        self._checks = tuple(Checker.create(arg) for arg in args)
+
+    def check(self, value):
+        for c in self._checks:
+            if c.check(value):
+                return False
+        else:
+            return True
+
+none = NoTypeChecker
 
 ################################################################################
 
@@ -328,3 +361,4 @@ def typecheck_with_exceptions(*, input_parameter_error: optional(_exception_clas
                                             return_value_error = return_value_error)
 
 ################################################################################
+
