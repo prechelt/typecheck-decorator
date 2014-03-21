@@ -1,6 +1,5 @@
 typecheck-decorator
-###################
-
+===================
 Lutz Prechelt, 2014
 
 A decorator for functions, `@typecheck`, to be used together with
@@ -219,6 +218,10 @@ To be useful, these "things" actually have to be predicate generators:
 Higher-order functions that return a predicate when called.
 But do not worry, their use looks perfectly straightforward eventually.
 
+
+5.1 Built-in predicate generators
+---------------------------------
+
 One of these, ``optional``, you will surely need;
 all others are a bit more specialized.
 As any annotation, all of them can be used for parameters and results alike.
@@ -397,6 +400,37 @@ desirable for pythonic clarity.
    ```
 
 
+5.2 Custom predicate generators
+-------------------------------
+
+If the above library of generators is insufficient for your needs,
+just write the missing ones yourself:
+A predicate generator is simply a function that returns an
+anonymous function with effectively the following signature:
+
+  ```Python
+  def mypredicate(the_argument: tc.anything) -> bool
+  ```
+
+No extension API is required.
+
+Here is an example:
+
+   ```Python
+   # defining a custom predicate generator:
+   def blocks(blocksize: int) -> bool :
+      def bytes_with_blocksize(arg):
+         """ensures the arg is a bytearray with the given block size"""
+         return (isinstance(arg, bytes) or isinstance(arg, bytearray)) and
+                len(arg) % blocksize == 0
+      return bytes_with_blocksize
+
+   # using the custom predicate generator:
+   @typecheck
+   def transfer(mydata: blocks(512)):  pass
+   ```
+
+
 6 Exceptions
 ============
 
@@ -446,32 +480,37 @@ Version history
   Dmitry Dvoinikov <dmitry@targeted.org>. See
   http://www.targeted.org/python/recipes/typecheck3000.py
 
-- **0.2b**:
-  First version to be packaged and uploaded to PyPI.
+- **0.2a**: Prepared by Lutz Prechelt.
   - Added documentation.
   - Fixed a number of errors in the tests that did not foresee
     that annotations will be checked in a random order.
-  - Added ``setup.py`` with on-installation auto-testing.
+  - Added ``setup.py``.
   - Replaced the not fully thought-through interpretation of iterables
     by a more specialized handling of tuples and lists.
   - Renamed several of the predicate generators.
+  First version that was packaged and uploaded to PyPI.
+  **Expect the API to change!**
 
 
 Similar packages
 ================
 
 - ``typecheck3`` is based on the same original code of Dmitry Dvoinikov
+  as typecheck-decorator,
   but (as of 0.1.0) lacks the tests, corrections, documentation,
   and API improvements available here.
 - ``gradual`` has a similar overall approach of using a decorator and annotations.
   Compared to gradual, typecheck-decorator uses a more pragmatic approach and
   is far more flexible in expressing types.
+- ``threecheck`` is similar to typecheck-decorator in
+  approach and expressiveness.
 
 
 TO DO
 =====
 
-- use decorator package.
+- add post-installation auto-testing
+- use decorator package
 - add predicate generator for fixed-structure dict and namedtuple
 - add predicate generator for int ranges and float ranges
 - replace ``disable()`` by
