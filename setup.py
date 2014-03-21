@@ -2,16 +2,17 @@
 # see http://packaging.python.org/en/latest/tutorial.html#creating-your-own-project
 
 from setuptools import setup, find_packages
+from  setuptools.command.install import install  as  stdinstall
 import codecs
 import os
 import re
+import sys
 
-here = os.path.abspath(os.path.dirname(__file__))
 
 def find_version(*file_paths):
+    here = os.path.abspath(os.path.dirname(__file__))
     with codecs.open(os.path.join(here, *file_paths), 'r', 'latin1') as f:
         version_file = f.read()
-
     # The version line must have the form
     # __version__ = 'ver'
     version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
@@ -20,54 +21,62 @@ def find_version(*file_paths):
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
+def get_file_contents(filename):
+    with codecs.open(filename, encoding='utf-8') as f:
+        contents = f.read()
+    return contents
 
-# Get the long description from the relevant file
-with codecs.open('README.rst', encoding='utf-8') as f:
-    long_description = f.read()
 
 package_name = "typecheck-decorator"
 
+
+class  install_with_test(stdinstall):
+     def  run(self):
+         stdinstall.run(self)  # normal install
+         ##pip/setuptools makes this unbuffering unhelpful:
+         #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1) # make line-buffered
+         #sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1) # make line-buffered
+         import typecheck.test_typecheck_decorator  # execute post-install test
+
+
 setup(
+    # setup customization:
+    cmdclass={'install': install_with_test},
+
+    # basic information:
     name=package_name,
     version=find_version('typecheck', '__init__.py'),
     description="flexible explicit type checking of function arguments (Python3-only)",
-    long_description=long_description,
+    long_description=get_file_contents("README.rst"),
 
-    # The project URL.
+    # The project URL:
     url='http://github.com/prechelt/' + package_name,
 
-    # Author details
+    # Author details:
     author='Dmitry Dvoinikov, Lutz Prechelt',
     author_email='prechelt@inf.fu-berlin.de',
 
-    # Choose your license
+    # Classification:
     license='BSD License',
-
     classifiers=[
+        'License :: OSI Approved :: BSD License',
+
         # How mature is this project? Common values are
         # 3 - Alpha
         # 4 - Beta
         # 5 - Production/Stable
         'Development Status :: 3 - Alpha',
 
-        # Indicate who your project is intended for
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Quality Assurance',
         'Topic :: Software Development :: Documentation',
 
-        # Pick your license as you wish (should match "license" above)
-        'License :: OSI Approved :: BSD License',
-
-        # Specify the Python versions you support here. In particular, ensure
-        # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.1',
         'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
     ],
-
-    # What does your project relate to?
     keywords='type-checking',
 
     # You can just specify the packages manually here if your project is
