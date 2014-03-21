@@ -533,7 +533,7 @@ Version history
   Dmitry Dvoinikov <dmitry@targeted.org>. See
   http://www.targeted.org/python/recipes/typecheck3000.py
 
-- **0.2a**: Prepared by Lutz Prechelt.
+- **0.2b**: Prepared by Lutz Prechelt.
   - Added documentation.
   - Fixed a number of errors in the tests that did not foresee
     that annotations will be checked in a random order.
@@ -544,6 +544,14 @@ Version history
   First version that was packaged and uploaded to PyPI.
   **Expect the API to change!**
 
+- **0.3b**:
+  - Renamed either_value to enum
+  - Renamed either_type to any
+  - Renamed matches to has and made it use re.search, not re.match
+  - Introduced all and none
+  - Introduced a post-installation self-test, because I am not yet
+    sure whether it will work on other platforms and with other Python versions
+  Feedback is welcome!
 
 Similar packages
 ================
@@ -562,7 +570,6 @@ Similar packages
 TO DO
 =====
 
-- add post-installation auto-testing
 - use decorator package
 - add predicate generator for fixed-structure dict and namedtuple
 - add predicate generator for int ranges and float ranges
