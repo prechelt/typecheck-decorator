@@ -145,13 +145,13 @@ as its only argument and must return a value that evaluates to
 
 Example:
 
-    ```Python
-    def is_even(n): type(n) is int and n%2 == 0
+   ```Python
+   def is_even(n): type(n) is int and n%2 == 0
 
-    @typecheck
-    def foo3(a:int) -> is_even :
-      return 2*a
-    ```
+   @typecheck
+   def foo3(a:int) -> is_even :
+     return 2*a
+   ```
 
 You can define your own predicate as shown above or use one of the
 predicate generators supplied with the package to create
@@ -229,18 +229,18 @@ Here we go:
 Takes any other annotation ``annot``.
 Allows all arguments that ``annot`` allows, plus ``None``:
 
-    ```Python
-    @typecheck
-    def foo_o1(a:int):
-     pass
-    @typecheck
-    def foo_o2(a:tc.optional(int)):
-     pass
-    foo_o1(123)    # OK
-    foo_o2(123)    # OK
-    foo_o1(None)   # Wrong: None does not have type int
-    foo_o2(None)   # OK
-    ```
+   ```Python
+   @typecheck
+   def foo_o1(a:int):
+    pass
+   @typecheck
+   def foo_o2(a:tc.optional(int)):
+    pass
+   foo_o1(123)    # OK
+   foo_o2(123)    # OK
+   foo_o1(None)   # Wrong: None does not have type int
+   foo_o2(None)   # OK
+   ```
 
 **tc.hasattr(*names)**:
 
@@ -248,18 +248,17 @@ Type-checked duck-typing:
 Takes a variable number of strings containing attribute names.
 Allows all arguments that possess each of those attributes.
 
-    ```Python
-    class FakeIO:
-        def write(self):  pass
-        def flush(self):  pass
+   ```Python
+   class FakeIO:
+       def write(self):  pass
+       def flush(self):  pass
+   @typecheck
+   def foo_re(a: tc.hasattrs("write", "flush")):  pass
 
-    @typecheck
-    def foo_re(a: tc.hasattrs("write", "flush")):  pass
-
-    foo(FakeIO())       # OK
-    del FakeIO.flush
-    foo(FakeIO())       # Wrong, because flush attribute is missing
-    ```
+   foo(FakeIO())       # OK
+   del FakeIO.flush
+   foo(FakeIO())       # Wrong, because flush attribute is missing
+   ```
 
 **tc.matches(regexp)**:
 
@@ -267,14 +266,14 @@ Takes a string containing a regular expression.
 Allows all arguments that are strings matched by that regular expression.
 Also works for bytestrings if you use a bytestring regular expression.
 
-    ```Python
-    @typecheck
-    def foo(hexnumber: tc.matches("^[0-9A-F]+$")) -> tc.matches("^[0-9]+$"):
-        return "".join(reversed(k))
+   ```Python
+   @typecheck
+   def foo(hexnumber: tc.matches("^[0-9A-F]+$")) -> tc.matches("^[0-9]+$"):
+       return "".join(reversed(k))
 
-    foo("1234")        # OK
-    foo("12AB")        # Wrong: argument OK, but result not allowed
-    ```
+   foo("1234")        # OK
+   foo("12AB")        # Wrong: argument OK, but result not allowed
+   ```
 
 **tc.sequence_of(annot)**:
 
@@ -282,17 +281,17 @@ Takes any other annotation ``annot``.
 Allows any argument that is a sequence (tuple or list) in which
 each element is allowed by ``annot``
 
-    ```Python
-    @typecheck
-    def foo_so(s: tc.sequence_of(str)):  pass
+   ```Python
+   @typecheck
+   def foo_so(s: tc.sequence_of(str)):  pass
 
-    foo_so(["a", "b"])         # OK
-    foo_so(("a", "b"))         # OK, a tuple
-    foo_so([])                 # OK
-    foo_so(["a"])              # OK
-    foo_so("a")                # Wrong: not a sequence in sequence_of sense
-    foo_so(["a", 1])           # Wrong: inhomogeneous
-    ```
+   foo_so(["a", "b"])         # OK
+   foo_so(("a", "b"))         # OK, a tuple
+   foo_so([])                 # OK
+   foo_so(["a"])              # OK
+   foo_so("a")                # Wrong: not a sequence in sequence_of sense
+   foo_so(["a", 1])           # Wrong: inhomogeneous
+   ```
 
 **tc.tuple_of(annot)**:
 
@@ -300,17 +299,17 @@ Takes any other annotation ``annot``.
 Allows any argument that is a tuple in which
 each element is allowed by ``annot``
 
-    ```Python
-    @typecheck
-    def foo_so(s: tc.tuple_of(str)):  pass
+   ```Python
+   @typecheck
+   def foo_so(s: tc.tuple_of(str)):  pass
 
-    foo_so(["a", "b"])         # Wrong: not a tuple
-    foo_so(("a", "b"))         # OK
-    foo_so(())                 # OK
-    foo_so(("a",))             # OK
-    foo_so("a")                # Wrong: not a sequence in sequence_of sense
-    foo_so(("a", 1))           # Wrong: inhomogeneous
-    ```
+   foo_so(["a", "b"])         # Wrong: not a tuple
+   foo_so(("a", "b"))         # OK
+   foo_so(())                 # OK
+   foo_so(("a",))             # OK
+   foo_so("a")                # Wrong: not a sequence in sequence_of sense
+   foo_so(("a", 1))           # Wrong: inhomogeneous
+   ```
 
 **tc.list_of(annot)**:
 
@@ -318,17 +317,17 @@ Takes any other annotation ``annot``.
 Allows any argument that is a list in which
 each element is allowed by ``annot``
 
-    ```Python
-    @typecheck
-    def foo_so(s: tc.list_of(str)):  pass
+   ```Python
+   @typecheck
+   def foo_so(s: tc.list_of(str)):  pass
 
-    foo_so(["a", "b"])         # OK
-    foo_so(("a", "b"))         # Wrong, not a list
-    foo_so([])                 # OK
-    foo_so(["a"])              # OK
-    foo_so("a")                # Wrong: not a sequence in list_of sense
-    foo_so(["a", 1])           # Wrong: inhomogeneous
-    ```
+   foo_so(["a", "b"])         # OK
+   foo_so(("a", "b"))         # Wrong, not a list
+   foo_so([])                 # OK
+   foo_so(["a"])              # OK
+   foo_so("a")                # Wrong: not a sequence in list_of sense
+   foo_so(["a", 1])           # Wrong: inhomogeneous
+   ```
 
 **tc.dict_of(keys_annot, values_annot)**:
 
@@ -337,17 +336,17 @@ Allows any argument that is a dictionary in which
 each key is allowed by keys_annot and
 each value is allowed by values_annot.
 
-    ```Python
-    @typecheck
-    def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
-        return { v: k  for k,v in x.items() }
+   ```Python
+   @typecheck
+   def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
+       return { v: k  for k,v in x.items() }
 
-    assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
-    foo({})             # OK: an empty dict is still a dict
-    foo(None)           # Wrong: None is not a dict
-    foo({"1": "2"})     # Wrong: violates values_annot of argument
-                          (also violates keys_annot of result)
-    ```
+   assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
+   foo({})             # OK: an empty dict is still a dict
+   foo(None)           # Wrong: None is not a dict
+   foo({"1": "2"})     # Wrong: violates values_annot of argument
+                         (also violates keys_annot of result)
+   ```
 
 **tc.either_value(*values)**:
 
@@ -355,14 +354,14 @@ Takes any number of arguments.
 Allows any argument that is equal to any one of them.
 Effectively defines an arbitrary enumeration type.
 
-    ```Python
-    @typecheck
-    def foo_ev(arg: tc.either_value(1, 2.0, "three", [1]*4)): pass
+   ```Python
+   @typecheck
+   def foo_ev(arg: tc.either_value(1, 2.0, "three", [1]*4)): pass
 
-    foo_ev(1)     # OK
-    foo_ev(1.0)   # Wrong: not in values list
-    foo_ev([1,1,1,1])  # OK
-    ```
+   foo_ev(1)     # OK
+   foo_ev(1.0)   # Wrong: not in values list
+   foo_ev([1,1,1,1])  # OK
+   ```
 
 **tc.either_type(*annots)**:
 
@@ -370,15 +369,15 @@ Takes any number of arguments, each being a valid annotation.
 Allows any argument that is allowed by any one of those annotations.
 Effectively defines an arbitrary union type.
 
-    ```Python
-    @typecheck
-    def foo_et(arg: tc.either_type(int, float, tc.matches("^[0-9]+$")): pass
+   ```Python
+   @typecheck
+   def foo_et(arg: tc.either_type(int, float, tc.matches("^[0-9]+$")): pass
 
-    foo_et(1)     # OK
-    foo_et(2.0)   # OK
-    foo_et("3")   # OK
-    foo_et("4.0") # Wrong: not allowed by any of the three partial types
-    ```
+   foo_et(1)     # OK
+   foo_et(2.0)   # OK
+   foo_et("3")   # OK
+   foo_et("4.0") # Wrong: not allowed by any of the three partial types
+   ```
 
 **tc.anything**:
 
@@ -387,16 +386,15 @@ The meaning is effectively the same as attaching no annotation at all,
 but explicitly declaring that no restrictions are intended may be
 desirable for pythonic clarity.
 
-    ```Python
-    @typecheck
-    def foo_any(arg: tc.anything) --> tc.anything:
-      pass
+   ```Python
+   @typecheck
+   def foo_any(arg: tc.anything) --> tc.anything:
+       pass
 
-    foo_ev(None)             # OK
-    foo_ev([[[[{"one":True}]]]]])  # OK
-    foo_ev(foo_ev)           # OK
-
-    ```
+   foo_ev(None)             # OK
+   foo_ev([[[[{"one":True}]]]]])  # OK
+   foo_ev(foo_ev)           # OK
+   ```
 
 
 6 Exceptions
