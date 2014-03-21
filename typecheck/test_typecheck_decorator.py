@@ -863,7 +863,7 @@ f = Bar()
 assert foo(f) is f
 
 f = Foo()
-with expected(InputParameterError("foo() has got an incompatible value for a: <__main__.Foo object at")):
+with expected(InputParameterError("foo() has got an incompatible value for a: <")):
     foo(f)
 
 @typecheck
@@ -874,7 +874,7 @@ f = Bar()
 assert foo(f) is f
 
 f = Foo()
-with expected(ReturnValueError("foo() has returned an incompatible value: <__main__.Foo object at")):
+with expected(ReturnValueError("foo() has returned an incompatible value: <")):
     foo(f)
 
 print("ok")
@@ -1085,7 +1085,7 @@ foo(FakeIO())
 
 del FakeIO.flush
 
-with expected(InputParameterError("foo() has got an incompatible value for a: <__main__.FakeIO object at ")):
+with expected(InputParameterError("foo() has got an incompatible value for a: <")):
     foo(FakeIO())
 
 ###################
