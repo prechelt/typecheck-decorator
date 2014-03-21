@@ -37,7 +37,7 @@ Here is a more complex example:
   import typecheck as tc
 
   @typecheck
-  def foo2(record:(int,int,bool), rgb:tc.matches("^[rgb]$")) -> tc.either_type(int,float) :
+  def foo2(record:(int,int,bool), rgb:tc.matches("^[rgb]$")) -> tc.any(int,float) :
       a = record[0]; b = record[1]
       return a/b if (a/b == float(a)/b) else float(a)/b
 
@@ -54,7 +54,7 @@ The result will be a number that can be either int or float.
 Other kinds of annotations:
 
 - ``tc.optional(int)`` will allow int and None,
-- ``tc.either_value(1, 2.0, "three")`` allows to define arbitrary enumeration types,
+- ``tc.enum(1, 2.0, "three")`` allows to define ad-hoc enumeration types,
 - ``tc.dict_of(str, tc.list_of(Person))`` describes dictionaries where all
   keys are strings and all values are homogeneous lists of Persons,
 - and so on.

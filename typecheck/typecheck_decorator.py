@@ -15,7 +15,7 @@ __all__ = [
 # check predicates:
 "optional", "hasattrs", "matches",
 "sequence_of", "tuple_of", "list_of", "dict_of",
-"either_value", "either_type", "anything",
+"enum", "any", "anything",
 
 # exceptions:
 "TypeCheckError", "InputParameterError", "ReturnValueError",
@@ -224,7 +224,7 @@ dict_of = DictOfChecker
 
 ################################################################################
 
-class EitherValueChecker(Checker):
+class EnumChecker(Checker):
 
     def __init__(self, *values):
         self._values = values
@@ -232,7 +232,7 @@ class EitherValueChecker(Checker):
     def check(self, value):
         return value in self._values
 
-either_value = EitherValueChecker
+enum = EnumChecker
 
 ################################################################################
 
@@ -248,7 +248,7 @@ class EitherTypeChecker(Checker):
         else:
             return False
 
-either_type = EitherTypeChecker
+any = EitherTypeChecker
 
 ################################################################################
 

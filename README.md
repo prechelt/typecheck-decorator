@@ -351,22 +351,23 @@ each value is allowed by values_annot.
                          (also violates keys_annot of result)
    ```
 
-**tc.either_value(*values)**:
+**tc.enum(*values)**:
 
 Takes any number of arguments.
-Allows any argument that is equal to any one of them.
-Effectively defines an arbitrary enumeration type.
+Allows any argument that is equal to any one of them
+(as opposed to being an instance of one).
+Effectively defines an arbitrary, ad-hoc enumeration type.
 
    ```Python
    @typecheck
-   def foo_ev(arg: tc.either_value(1, 2.0, "three", [1]*4)): pass
+   def foo_ev(arg: tc.enum(1, 2.0, "three", [1]*4)): pass
 
    foo_ev(1)     # OK
    foo_ev(1.0)   # Wrong: not in values list
    foo_ev([1,1,1,1])  # OK
    ```
 
-**tc.either_type(*annots)**:
+**tc.any(*annots)**:
 
 Takes any number of arguments, each being a valid annotation.
 Allows any argument that is allowed by any one of those annotations.
@@ -374,7 +375,7 @@ Effectively defines an arbitrary union type.
 
    ```Python
    @typecheck
-   def foo_et(arg: tc.either_type(int, float, tc.matches("^[0-9]+$")): pass
+   def foo_et(arg: tc.any(int, float, tc.matches("^[0-9]+$")): pass
 
    foo_et(1)     # OK
    foo_et(2.0)   # OK

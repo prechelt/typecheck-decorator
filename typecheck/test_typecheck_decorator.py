@@ -528,7 +528,7 @@ while time() < start + 1.0:
 
         test_passes += 1
 
-print("{0} test passes ok".format(test_passes))
+print("{0} tests passed ok".format(test_passes))
 
 ############################################################################
 
@@ -831,7 +831,7 @@ while time() < start + 1.0:
 
         test_passes += 1
 
-print("{0} test passes ok".format(test_passes))
+print("{0} tests passed ok".format(test_passes))
 
 ############################################################################
 
@@ -1352,10 +1352,10 @@ print("ok")
 
 ############################################################################
 
-print("either_value: ", end="")
+print("enum: ", end="")
 
 @typecheck
-def foo(x: either_value(int, 1)) -> either_value(1, int):
+def foo(x: enum(int, 1)) -> enum(1, int):
     return x
 
 assert foo(1) == 1
@@ -1365,7 +1365,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: 2"
     foo(2)
 
 @typecheck
-def bar(*, x: either_value(None)) -> either_value():
+def bar(*, x: enum(None)) -> enum():
     return x
 
 with expected(ReturnValueError("bar() has returned an incompatible value: None")):
@@ -1373,11 +1373,11 @@ with expected(ReturnValueError("bar() has returned an incompatible value: None")
 
 with expected(TypeCheckSpecificationError("the default value for x is incompatible with its typecheck")):
     @typecheck
-    def foo(x: either_value(1) = 2):
+    def foo(x: enum(1) = 2):
         pass
 
 @typecheck
-def foo(x: optional(either_value(1, 2)) = 2):
+def foo(x: optional(enum(1, 2)) = 2):
     return x
 
 assert foo() == 2
@@ -1386,17 +1386,17 @@ print("ok")
 
 ############################################################################
 
-print("either_type: ", end="")
+print("any: ", end="")
 
 @typecheck
-def foo(x: either_type()):
+def foo(x: any()):
     pass
 
 with expected(InputParameterError("foo() has got an incompatible value for x: 1")):
     foo(1)
 
 @typecheck
-def bar(x: either_type((int, float), matches("^foo$"), either_value(b"X", b"Y"))):
+def bar(x: any((int, float), matches("^foo$"), enum(b"X", b"Y"))):
     pass
 
 bar((1, 1.0))
@@ -1414,7 +1414,7 @@ with expected(InputParameterError("bar() has got an incompatible value for x: Y"
     bar("Y")
 
 nothing_at_all = ((type(None), ) * 1000)
-either_nothing = either_type(either_type(either_type(either_type(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
+either_nothing = any(any(any(any(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
 
 @typecheck
 def biz(x) -> either_nothing:
@@ -1424,7 +1424,7 @@ with expected(ReturnValueError("biz() has returned an incompatible value: anythi
     biz("anything")
 
 @typecheck
-def accept_number(x: either_type(int, matches("^[0-9]+$"))):
+def accept_number(x: any(int, matches("^[0-9]+$"))):
     return int(x) + 1
 
 assert accept_number(1) == 2
