@@ -2,7 +2,7 @@ typecheck-decorator
 ===================
 Lutz Prechelt, 2014
 
-A decorator for functions, `@typecheck`, to be used together with
+A decorator for functions, `@tc.typecheck`, to be used together with
 Python3 annotations on function parameters and function results.
 The decorator will perform dynamic argument type checking for every call to the function.
 
@@ -10,7 +10,7 @@ The decorator will perform dynamic argument type checking for every call to the 
 ===============================
 
   ```Python
-  @typecheck
+  @tc.typecheck
   def foo1(a:int, b=None, c:str="mydefault") -> bool :
       print(a, b, c)
       return b is not None and a != b
@@ -25,7 +25,7 @@ It is important to understand that, as such,
 There must be explicit Python code somewhere
 that looks at them and does something in order to give them a meaning.
 
-The ``@typecheck`` decorator gives the above annotations the following meaning:
+The ``@tc.typecheck`` decorator gives the above annotations the following meaning:
 ``foo1``'s argument ``a`` must have type ``int``,
 ``b`` has no annotation and can have any type whatsoever, it will not be checked,
 ``c`` must have type string,
@@ -48,18 +48,19 @@ can be any constraint on the set of allowable values.
 2 Import style, usage style
 ===========================
 
-The recommended import style is as follows:
+For clarity, the recommended import style is as follows:
 
   ```Python
-  from typecheck import typecheck    # for the decorator
-  import typecheck as tc             # for clarity for all other objects
+  import typecheck as tc
   ```
 
-The remainder of this document will assume these imports.
+The remainder of this document will assume this import style.
+(Beware of importing * , as there are functions any() and all() 
+that are likely to break your code then.)
 
 As for usage style, the idea of this package is not to approximate
 static type checking.
-Rather, you should use ``@typecheck`` "where appropriate".
+Rather, you should use ``@tc.typecheck`` "where appropriate".
 Good examples for such situations might be:
 - You want to clarify your own thinking at module design time.
 - Some callers of your package tend to be careless or ignorant
@@ -79,7 +80,7 @@ parameters may be annotated. Where appropriate.
 3 How it works
 ==============
 
-At function definition time, the ``@typecheck`` decorator converts
+At function definition time, the ``@tc.typecheck`` decorator converts
 each annotation into a predicate function (called a ``Checker``)
 and stores all of these in the wrapper function.
 
@@ -94,7 +95,7 @@ checked likewise if a result annotation had been provided.
 4 The three sorts of annotation
 ===============================
 
-``@typecheck`` allows three different kinds of annotation to
+``@tc.typecheck`` allows three different kinds of annotation to
 some parameter PAR:
 - **Types.**
   The annotation is an expression returning a type, typically
@@ -119,7 +120,7 @@ The annotation is an expression for which ``inspect.isclass`` evaluates to True.
 Example:
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo2(a:int, d:dict, l:list=None) -> datetime.datetime :
      pass
    ```
@@ -147,7 +148,7 @@ Example:
    ```Python
    def is_even(n): type(n) is int and n%2 == 0
 
-   @typecheck
+   @tc.typecheck
    def foo3(a:int) -> is_even :
      return 2*a
    ```
@@ -169,7 +170,7 @@ but rather make heavy use of the built-in sequence types.
 It is easiest explained by examples:
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo4(pair:(int,int), descriptor:[int, float, float, bool]):
      pass
    foo4((1,2), [3, 2.0, 77.0, True])    # OK
@@ -179,7 +180,7 @@ It is easiest explained by examples:
    foo4((0.0,2), [3, 2.0, 77.0, True])  # Wrong: pair[0] type mismatch
    foo4((1,2), None)                    # Wrong: descriptor is missing
 
-   @typecheck
+   @tc.typecheck
    def foo5(pair:(int,int), descriptor:[int, (float, float), bool]):
      pass
    foo5((1,2), [3, (2.0, 77.0), True])  # OK
@@ -233,10 +234,10 @@ Takes any other annotation ``annot``.
 Allows all arguments that ``annot`` allows, plus ``None``:
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_o1(a:int):
     pass
-   @typecheck
+   @tc.typecheck
    def foo_o2(a:tc.optional(int)):
     pass
    foo_o1(123)    # OK
@@ -255,7 +256,7 @@ Allows all arguments that possess every one of those attributes.
    class FakeIO:
        def write(self):  pass
        def flush(self):  pass
-   @typecheck
+   @tc.typecheck
    def foo_re(a: tc.hasattrs("write", "flush")):  pass
 
    foo(FakeIO())       # OK
@@ -271,7 +272,7 @@ by that regular expression (as defined by ``re.search``).
 Also works for bytestrings if you use a bytestring regular expression.
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo(hexnumber: tc.has("^[0-9A-F]+$")) -> tc.has("^[0-9]+$"):
        return "".join(reversed(k))
 
@@ -286,7 +287,7 @@ Allows any argument that is a sequence (tuple or list) in which
 each element is allowed by ``annot``
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_so(s: tc.sequence_of(str)):  pass
 
    foo_so(["a", "b"])         # OK
@@ -304,7 +305,7 @@ Allows any argument that is a tuple in which
 each element is allowed by ``annot``
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_so(s: tc.tuple_of(str)):  pass
 
    foo_so(["a", "b"])         # Wrong: not a tuple
@@ -322,7 +323,7 @@ Allows any argument that is a list in which
 each element is allowed by ``annot``
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_so(s: tc.list_of(str)):  pass
 
    foo_so(["a", "b"])         # OK
@@ -341,7 +342,7 @@ each key is allowed by keys_annot and
 each value is allowed by values_annot.
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
        return { v: k  for k,v in x.items() }
 
@@ -360,7 +361,7 @@ Allows any argument that is equal to any one of them
 Effectively defines an arbitrary, ad-hoc enumeration type.
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_ev(arg: tc.enum(1, 2.0, "three", [1]*4)): pass
 
    foo_ev(1)     # OK
@@ -376,7 +377,7 @@ Effectively defines an arbitrary union type.
 You could think of it as an n-ary ``or``.
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_any(arg: tc.any(int, float, tc.matches("^[0-9]+$")): pass
 
    foo_any(1)     # OK
@@ -396,7 +397,7 @@ You could think of it as an n-ary ``and``.
    def complete_blocks(arg):
        return len(arg) % 512 == 0
 
-   @typecheck
+   @tc.typecheck
    def foo_all(arg: tc.all(tc.any(bytes,bytearray), complete_blocks)): pass
 
    foo_all(b"x" * 512)              # OK
@@ -423,7 +424,7 @@ You could think of it as "not any" or as "all not".
    def classname_contains_Test(arg):
       return type(arg).__name__.find("Test") >= 0
 
-   @typecheck
+   @tc.typecheck
    def no_tests_please(arg: tc.none(TestCase, classname_contains_Test)): pass
 
    no_tests_please("stuff")        # OK
@@ -443,7 +444,7 @@ and also equivalent to ``tc.none()``, that is, none-of-nothing,
 but is much less confusing.
 
    ```Python
-   @typecheck
+   @tc.typecheck
    def foo_any(arg: tc.anything) --> tc.anything:
        pass
 
@@ -479,7 +480,7 @@ Here is an example:
       return bytes_with_blocksize
 
    # using the custom predicate generator:
-   @typecheck
+   @tc.typecheck
    def transfer(mydata: blocks(512)):  pass
    ```
 
@@ -502,7 +503,7 @@ Here is an example:
 7 Efficiency considerations
 ===========================
 
-@typecheck may appear to be expensive in terms of runtime,
+@tc.typecheck may appear to be expensive in terms of runtime,
 but actually Python is doing shiploads of similar things
 all the time.
 
@@ -529,11 +530,11 @@ Limitations
 Version history
 ===============
 
-- **0.1b**: Original version ``typecheck3000.py`` by
+- **0.1b**: 2012, Original version ``typecheck3000.py`` by
   Dmitry Dvoinikov <dmitry@targeted.org>. See
   http://www.targeted.org/python/recipes/typecheck3000.py
 
-- **0.2b**: Prepared by Lutz Prechelt.
+- **0.2b**: 2014-03-20, prepared by Lutz Prechelt.
   - Added documentation.
   - Fixed a number of errors in the tests that did not foresee
     that annotations will be checked in a random order.
@@ -544,7 +545,7 @@ Version history
   First version that was packaged and uploaded to PyPI.
   **Expect the API to change!**
 
-- **0.3b**:
+- **0.3b**: 2014-03-21
   - Renamed either_value to enum
   - Renamed either_type to any
   - Renamed matches to has and made it use re.search, not re.match

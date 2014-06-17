@@ -1,10 +1,10 @@
-A decorator for functions, ``@typecheck``, to be used together with
+A decorator for functions, ``@tc.typecheck``, to be used together with
 Python3 annotations on function parameters and function results.
 The decorator will perform dynamic argument type checking for every call to the function.
 
 ::
 
-  @typecheck
+  @tc.typecheck
   def foo1(a:int, b=None, c:str="mydefault") -> bool :
       print(a, b, c)
       return b is not None and a != b
@@ -18,7 +18,7 @@ It is important to understand that, as such,
 There must be explicit Python code somewhere
 that looks at them and does something in order to give them a meaning.
 
-The ``@typecheck`` decorator gives the above annotations the following meaning:
+The ``@tc.typecheck`` decorator gives the above annotations the following meaning:
 ``foo1``'s argument ``a`` must have type ``int``,
 ``b`` has no annotation and can have any type whatsoever, it will not be checked,
 ``c`` must have type string,
@@ -33,11 +33,10 @@ Here is a more complex example:
 
 ::
 
-  from typecheck import typecheck
   import typecheck as tc
 
-  @typecheck
-  def foo2(record:(int,int,bool), rgb:tc.matches("^[rgb]$")) -> tc.any(int,float) :
+  @tc.typecheck
+  def foo2(record:(int,int,bool), rgb:tc.has("^[rgb]$")) -> tc.any(int,float) :
       a = record[0]; b = record[1]
       return a/b if (a/b == float(a)/b) else float(a)/b
 

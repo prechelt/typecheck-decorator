@@ -11,7 +11,6 @@ from random import randint, shuffle
 from time import time
 from traceback import extract_stack
 
-from typecheck import typecheck  # TODO: @typecheck --> @tc.typecheck
 import typecheck as tc
 from typecheck import InputParameterError, ReturnValueError, TypeCheckSpecificationError
 
@@ -51,7 +50,7 @@ class expected:
 
 
 def test_wrapped_function_keeps_its_name():
-    @typecheck
+    @tc.typecheck
     def foo() -> type(None):
         pass
     print("method proxy naming")
@@ -59,25 +58,25 @@ def test_wrapped_function_keeps_its_name():
 
 
 def test_no_excessive_proxying():
-    @typecheck
+    @tc.typecheck
     def foo():
         assert extract_stack()[-2][2] != "typecheck_invocation_proxy"
     foo()
-    @typecheck
+    @tc.typecheck
     def bar() -> type(None):
         assert extract_stack()[-2][2] == "typecheck_invocation_proxy"
     bar()
 
 
 def test_double_annotations_wrapping():
-    @typecheck
+    @tc.typecheck
     def foo(x: int):
         return x
-    assert foo(1) == typecheck(foo)(1) == 1
+    assert foo(1) == tc.typecheck(foo)(1) == 1
 
 
 def test_empty_string_in_incompatible_values():
-    @typecheck
+    @tc.typecheck
     def foo(s: lambda s: s != "" = None):
         return s
     assert foo() is None
@@ -85,7 +84,7 @@ def test_empty_string_in_incompatible_values():
     assert foo(0) == 0
     with expected(InputParameterError("foo() has got an incompatible value for s: ''")):
         foo("")
-    @typecheck
+    @tc.typecheck
     def foo(*, k: tc.optional(lambda s: s != "") = None):
         return k
     assert foo() is None
@@ -93,7 +92,7 @@ def test_empty_string_in_incompatible_values():
     assert foo(k = 0) == 0
     with expected(InputParameterError("foo() has got an incompatible value for k: ''")):
         foo(k = "")
-    @typecheck
+    @tc.typecheck
     def foo(s = None) -> lambda s: s != "":
         return s
     assert foo() is None
@@ -105,44 +104,44 @@ def test_empty_string_in_incompatible_values():
 
 def test_invalid_type_specification():
     with expected(TypeCheckSpecificationError("invalid typecheck for a")):
-        @typecheck
+        @tc.typecheck
         def foo(a: 10):
             pass
     with expected(TypeCheckSpecificationError("invalid typecheck for k")):
-        @typecheck
+        @tc.typecheck
         def foo(*, k: 10):
             pass
     with expected(TypeCheckSpecificationError("invalid typecheck for return")):
-        @typecheck
+        @tc.typecheck
         def foo() -> 10:
             pass
 
 
 def test_incompatible_default_value():
     with expected(TypeCheckSpecificationError("the default value for b is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def ax_b2(a, b: int = "two"):
             pass
     with expected(TypeCheckSpecificationError("the default value for a is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def a1_b2(a: int = "one", b = "two"):
             pass
     with expected(TypeCheckSpecificationError("the default value for a is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def foo(a: str = None):
             pass
     with expected(TypeCheckSpecificationError("the default value for a is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def kw(*, a: int = 1.0):
             pass
     with expected(TypeCheckSpecificationError("the default value for b is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def kw(*, a: int = 1, b: str = 10):
             pass
 
 
 def test_can_change_default_value():
-    @typecheck
+    @tc.typecheck
     def foo(a: list = []):
         a.append(len(a))
         return a
@@ -151,7 +150,7 @@ def test_can_change_default_value():
     assert foo([]) == [0]
     assert foo() == [0, 1, 2]
     assert foo() == [0, 1, 2, 3]
-    @typecheck
+    @tc.typecheck
     def foo(*, k: tc.optional(list) = []):
         k.append(len(k))
         return k
@@ -163,7 +162,7 @@ def test_can_change_default_value():
 
 
 def test_unchecked_args():
-    @typecheck
+    @tc.typecheck
     def axn_bxn(a, b):
         return a + b
     assert axn_bxn(10, 20) == 30
@@ -179,7 +178,7 @@ def test_unchecked_args():
 
 
 def test_default_unchecked_args1():
-    @typecheck
+    @tc.typecheck
     def axn_b2n(a, b = 2):
         return a + b
     assert axn_b2n(10, 20) == 30
@@ -194,7 +193,7 @@ def test_default_unchecked_args1():
 
 
 def test_default_unchecked_args2():
-    @typecheck
+    @tc.typecheck
     def a1n_b2n(a = 1, b = 2):
         return a + b
     assert a1n_b2n(10, 20) == 30
@@ -207,7 +206,7 @@ def test_default_unchecked_args2():
 
 
 def test_simple_checked_args1():
-    @typecheck
+    @tc.typecheck
     def axc_bxn(a: int, b):
         return a + b
     assert axc_bxn(10, 20) == 30
@@ -225,7 +224,7 @@ def test_simple_checked_args1():
 
 
 def test_simple_checked_args2():
-    @typecheck
+    @tc.typecheck
     def axn_bxc(a, b: int):
         return a + b
     assert axn_bxc(10, 20) == 30
@@ -243,7 +242,7 @@ def test_simple_checked_args2():
 
 
 def test_simple_default_checked_args1():
-    @typecheck
+    @tc.typecheck
     def axn_b2c(a, b: int = 2):
         return a + b
     assert axn_b2c(10, 20) == 30
@@ -260,7 +259,7 @@ def test_simple_default_checked_args1():
 
 
 def test_simple_default_checked_args2():
-    @typecheck
+    @tc.typecheck
     def a1n_b2c(a = 1, b: int = 2):
         return a + b
     assert a1n_b2c(10, 20) == 30
@@ -275,7 +274,7 @@ def test_simple_default_checked_args2():
 
 
 def test_simple_default_checked_args3():
-    @typecheck
+    @tc.typecheck
     def axc_b2n(a: int, b = 2):
         return a + b
     assert axc_b2n(10, 20) == 30
@@ -293,7 +292,7 @@ def test_simple_default_checked_args3():
 
 
 def test_simple_default_checked_args4():
-    @typecheck
+    @tc.typecheck
     def a1c_b2n(a: int = 1, b = 2):
         return a + b
     assert a1c_b2n(10, 20) == 30
@@ -309,7 +308,7 @@ def test_simple_default_checked_args4():
 
 
 def test_simple_checked_args3():
-    @typecheck
+    @tc.typecheck
     def axc_bxc(a: int, b: int):
         return a + b
     assert axc_bxc(10, 20) == 30
@@ -328,7 +327,7 @@ def test_simple_checked_args3():
 
 
 def test_simple_default_checked_args5():
-    @typecheck
+    @tc.typecheck
     def axc_b2c(a: int, b: int = 2):
         return a + b
     assert axc_b2c(10, 20) == 30
@@ -347,7 +346,7 @@ def test_simple_default_checked_args5():
 
 
 def test_simple_default_checked_args6():
-    @typecheck
+    @tc.typecheck
     def a1c_b2c(a: int = 1, b: int = 2):
         return a + b
     assert a1c_b2c(10, 20) == 30
@@ -378,7 +377,7 @@ def test_default_vs_checked_args_random_generated():
                                                               x[1][2] and " = {0}".format(x[0]) or ""),
                                  enumerate(zip(args, chkd, deft))))
         sum_args = " + ".join(args)
-        test = "@typecheck\n" \
+        test = "@tc.typecheck\n" \
                "def some_func({def_args}):\n" \
                "    return {sum_args}\n"
         for provided_args in range(DN, N + 1):
@@ -406,7 +405,7 @@ def test_default_vs_checked_args_random_generated():
 ############################################################################
 
 def test_default_vs_checked_kwargs1():
-    @typecheck
+    @tc.typecheck
     def foo(*, a: str):
         return a
     with expected(InputParameterError("foo() has got an incompatible value for a: <no value>")):
@@ -415,7 +414,7 @@ def test_default_vs_checked_kwargs1():
 
 
 def test_default_vs_checked_kwargs2():
-    @typecheck
+    @tc.typecheck
     def foo(*, a: tc.optional(str) = "a"):
         return a
     assert foo() == "a"
@@ -425,7 +424,7 @@ def test_default_vs_checked_kwargs2():
 
 
 def test_default_vs_checked_kwargs3():
-    @typecheck
+    @tc.typecheck
     def pxn_qxn(*, p, q, **kwargs):
         return p + q
     assert pxn_qxn(p = 1, q = 2) == 3
@@ -444,7 +443,7 @@ def test_default_vs_checked_kwargs3():
 
 
 def test_default_vs_checked_kwargs4():
-    @typecheck
+    @tc.typecheck
     def pxn_q2n(*, p, q = 2):
         return p + q
     assert pxn_q2n(p = 1, q = 2) == 3
@@ -461,7 +460,7 @@ def test_default_vs_checked_kwargs4():
 
 
 def test_default_vs_checked_kwargs5():
-    @typecheck
+    @tc.typecheck
     def p1n_q2n(*, p = 1, q = 2):
         return p + q
     assert p1n_q2n(p = 1, q = 2) == 3
@@ -474,7 +473,7 @@ def test_default_vs_checked_kwargs5():
 
 
 def test_default_vs_checked_kwargs6():
-    @typecheck
+    @tc.typecheck
     def pxn_qxc(*, p, q: int):
         return p + q
     assert pxn_qxc(p = 1, q = 2) == 3
@@ -493,7 +492,7 @@ def test_default_vs_checked_kwargs6():
 
 
 def test_default_vs_checked_kwargs7():
-    @typecheck
+    @tc.typecheck
     def pxn_q2c(*, p, q: int = 2):
         return p + q
     assert pxn_q2c(p = 1, q = 2) == 3
@@ -512,7 +511,7 @@ def test_default_vs_checked_kwargs7():
 
 
 def test_default_vs_checked_kwargs8():
-    @typecheck
+    @tc.typecheck
     def p1n_q2c(*, p = 1, q: int = 2):
         return p + q
     assert p1n_q2c(p = 1, q = 2) == 3
@@ -529,7 +528,7 @@ def test_default_vs_checked_kwargs8():
 
 
 def test_default_vs_checked_kwargs9():
-    @typecheck
+    @tc.typecheck
     def pxc_qxc(*, p: int, q: int):
         return p + q
     assert pxc_qxc(p = 1, q = 2) == 3
@@ -550,7 +549,7 @@ def test_default_vs_checked_kwargs9():
 
 
 def test_default_vs_checked_kwargs10():
-    @typecheck
+    @tc.typecheck
     def pxc_q2c(*, p: int, q: int = 2):
         return p + q
     assert pxc_q2c(p = 1, q = 2) == 3
@@ -569,7 +568,7 @@ def test_default_vs_checked_kwargs10():
 
 
 def test_default_vs_checked_kwargs11():
-    @typecheck
+    @tc.typecheck
     def p1c_q2c(*, p: int = 1, q: int = 2):
         return p + q
     assert p1c_q2c(p = 1, q = 2) == 3
@@ -597,7 +596,7 @@ def test_default_vs_checked_kwargs_randomly_generated():
         def_kwrs = ", ".join("{0}{1}{2}".format(k, c and ": tc.optional(int)" or "", d and " = {0}".format(i) or "")
                              for (i, (k, c, d)) in enumerate(zip(kwrs, chkd, deft)))
         sum_kwrs = " + ".join(kwrs)
-        test = "@typecheck\n" \
+        test = "@tc.typecheck\n" \
                "def some_func(*, {def_kwrs}):\n" \
                "    return {sum_kwrs}\n"
         for i in range(N):
@@ -626,11 +625,11 @@ def test_default_vs_checked_kwargs_randomly_generated():
 
 
 def test_TypeChecker():
-    @typecheck
+    @tc.typecheck
     def foo(a: int) -> object:
         return a
     assert foo(10) == 10
-    @typecheck
+    @tc.typecheck
     def foo(*args, a: str) -> float:
         return float(a)
     assert foo(a = "10.0") == 10.0
@@ -638,7 +637,7 @@ def test_TypeChecker():
         pass
     class Bar(Foo):
         pass
-    @typecheck
+    @tc.typecheck
     def foo(a: Bar) -> Foo:
         return a
     f = Bar()
@@ -646,7 +645,7 @@ def test_TypeChecker():
     f = Foo()
     with expected(InputParameterError("foo() has got an incompatible value for a: <")):
         foo(f)
-    @typecheck
+    @tc.typecheck
     def foo(a: Foo) -> Bar:
         return a
     f = Bar()
@@ -659,7 +658,7 @@ def test_TypeChecker():
 ############################################################################
 
 def test_FixedSequenceChecker1():
-    @typecheck
+    @tc.typecheck
     def foo(a: (int,str) = (1,"!"), *, k: tc.optional(()) = ()) -> (str, ()):
         return a[1], k
     assert foo() == ("!", ())
@@ -675,7 +674,7 @@ def test_FixedSequenceChecker1():
 
 
 def test_FixedSequenceChecker2():
-    @typecheck
+    @tc.typecheck
     def foo(a: [] = [], *, k: tc.optional([]) = None) -> ([], tc.optional([])):
         return a, k
     assert foo() == ([], None)
@@ -693,7 +692,7 @@ def test_FixedSequenceChecker2():
 
 
 def test_FixedSequenceChecker3():
-    @typecheck
+    @tc.typecheck
     def foo(*args) -> (int, str):
         return args
     foo(1, "2") == 1, "2"
@@ -706,7 +705,7 @@ def test_FixedSequenceChecker3():
 
 
 def test_FixedSequenceChecker4():
-    @typecheck
+    @tc.typecheck
     def foo(*, k: tc.optional([[[[lambda x: x % 3 == 1]]]]) = [[[[4]]]]):
         return k[0][0][0][0]
     assert foo() % 3 == 1
@@ -716,7 +715,7 @@ def test_FixedSequenceChecker4():
 
 
 def test_CallableChecker1():
-    @typecheck
+    @tc.typecheck
     def foo(a: callable, *, k: callable) -> callable:
         return a(k(lambda: 2))
     x = lambda x: x
@@ -726,14 +725,14 @@ def test_CallableChecker1():
 def test_CallableChecker2():
     class NumberToolset:
         @classmethod
-        @typecheck
+        @tc.typecheck
         def is_even(cls, value: int) -> bool:
             return value % 2 == 0
         @staticmethod
-        @typecheck
+        @tc.typecheck
         def is_odd(value: int) -> bool:
             return not NumberToolset.is_even(value)
-    @typecheck
+    @tc.typecheck
     def foo(a: NumberToolset.is_even = 0) -> NumberToolset.is_odd:
         return a + 1
     assert foo() == 1
@@ -743,7 +742,7 @@ def test_CallableChecker2():
 
 
 def test_CallableChecker3():
-    @typecheck
+    @tc.typecheck
     def foo(x = None) -> type(None):
         return x
     assert foo() is None
@@ -752,14 +751,14 @@ def test_CallableChecker3():
 
 
 def test_OptionalChecker1():
-    @typecheck
+    @tc.typecheck
     def foo(b: bool) -> bool:
         return not b
     assert foo(True) is False
     assert foo(False) is True
     with expected(InputParameterError("foo() has got an incompatible value for b: 0")):
         foo(0)
-    @typecheck
+    @tc.typecheck
     def foo(*, b: tc.optional(bool) = None) -> bool:
         return b
     assert foo(b = False) is False
@@ -770,29 +769,29 @@ def test_OptionalChecker1():
 def test_OptionalChecker2():
     not_none = lambda x: x is not None
     with expected(TypeCheckSpecificationError("the default value for a is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def foo(a: not_none = None):
             return a
-    @typecheck
+    @tc.typecheck
     def foo(a: tc.optional(not_none) = None): # note how optional overrides the not_none
         return a
     assert foo() is None
     assert foo(None) is None
     with expected(TypeCheckSpecificationError("the default value for k is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def foo(*, k: not_none = None):
             return k
-    @typecheck
+    @tc.typecheck
     def foo(*, k: tc.optional(not_none) = None): # note how optional overrides the not_none
         return k
     assert foo() is None
     assert foo(k = None) is None
-    @typecheck
+    @tc.typecheck
     def foo(x = None) -> not_none:
         return x
     with expected(ReturnValueError("foo() has returned an incompatible value: None")):
         foo()
-    @typecheck
+    @tc.typecheck
     def foo(x = None) -> tc.optional(not_none): # note how optional overrides the not_none
         return x
     assert foo() is None
@@ -805,7 +804,7 @@ def test_hasattrs1():
             pass
         def flush(self):
             pass
-    @typecheck
+    @tc.typecheck
     def foo(a: tc.hasattrs("write", "flush")):
         pass
     foo(FakeIO())
@@ -835,7 +834,7 @@ def test_has1():
 
 
 def test_has2():
-    @typecheck
+    @tc.typecheck
     def foo(*, k: tc.has("^[0-9A-F]+$")) -> tc.has("^[0-9]+$"):
         return "".join(reversed(k))
     assert foo(k = "1234") == "4321"
@@ -848,7 +847,7 @@ def test_has2():
 
 
 def test_has3():
-    @typecheck
+    @tc.typecheck
     def foo(*, k: (tc.has("^1$"), [tc.has("^x$"), tc.has("^y$")])):
         return k[0] + k[1][0] + k[1][1]
     assert foo(k = ("1", ["x", "y"])) == "1xy"
@@ -868,7 +867,7 @@ def test_has4():
               "\u043e\u043f\u0440\u0441\u0442\u0443\u0444\u0445\u0446\u0447\u0448\u0449" \
               "\u044c\u044b\u044a\u044d\u044e\u044f"
     assert len(russian) == 66
-    @typecheck
+    @tc.typecheck
     def foo(s: tc.has("^[{0}]$".format(russian))):
         return len(s)
     for c in russian:
@@ -878,7 +877,7 @@ def test_has4():
 
 
 def test_has5():
-    @typecheck
+    @tc.typecheck
     def numbers_only_please(s: tc.has("^[0-9]+$")):
         pass
     numbers_only_please("123")
@@ -892,7 +891,7 @@ def test_has6():
 
 
 def test_tuple_of1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.tuple_of(int)) -> tc.tuple_of(float):
         return tuple(map(float, x))
     assert foo(()) == ()
@@ -904,7 +903,7 @@ def test_tuple_of1():
 
 
 def test_tuple_of2():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.tuple_of([tc.has("^[01]+$"), int])) -> bool:
         return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                                 x, True)
@@ -920,7 +919,7 @@ def test_tuple_of3():
 
 
 def test_list_of1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.list_of(int)) -> tc.list_of(float):
         return list(map(float, x))
     assert foo([]) == []
@@ -932,7 +931,7 @@ def test_list_of1():
 
 
 def test_list_of2():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.list_of((tc.has("^[01]+$"), int))) -> bool:
         return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                                 x, True)
@@ -948,7 +947,7 @@ def test_list_of3():
 
 
 def test_sequence_of1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.sequence_of(int)) -> tc.sequence_of(float):
         return list(map(float, x))
     assert foo([]) == []
@@ -959,7 +958,7 @@ def test_sequence_of1():
 
 
 def test_sequence_of2():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.sequence_of((tc.has("^[01]+$"), int))) -> bool:
         return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                                 x, True)
@@ -975,7 +974,7 @@ def test_sequence_of3():
 
 
 def test_dict_of1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.dict_of(int, str)) -> tc.dict_of(str, int):
         return { v: k for k, v in x.items() }
     assert foo({}) == {}
@@ -989,7 +988,7 @@ def test_dict_of1():
 
 
 def test_dict_of2():
-    @typecheck
+    @tc.typecheck
     def foo(*, k: tc.dict_of((int, int), [tc.has("^[0-9]+$"), tc.has("^[0-9]+$")])):
         return functools.reduce(lambda r, t: r and str(t[0][0]) == t[1][0] and str(t[0][1]) == t[1][1],
                                 k.items(), True)
@@ -1012,7 +1011,7 @@ def test_dict_of3():
 
 
 def test_enum1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.enum(int, 1)) -> tc.enum(1, int):
         return x
     assert foo(1) == 1
@@ -1022,7 +1021,7 @@ def test_enum1():
 
 
 def test_enum2():
-    @typecheck
+    @tc.typecheck
     def bar(*, x: tc.enum(None)) -> tc.enum():
         return x
     with expected(ReturnValueError("bar() has returned an incompatible value: None")):
@@ -1031,25 +1030,25 @@ def test_enum2():
 
 def test_enum3():
     with expected(TypeCheckSpecificationError("the default value for x is incompatible with its typecheck")):
-        @typecheck
+        @tc.typecheck
         def foo(x: tc.enum(1) = 2):
             pass
 
 
 def test_enum4():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.optional(tc.enum(1, 2)) = 2):
         return x
     assert foo() == 2
 
 
 def test_any1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.any()):
         pass
     with expected(InputParameterError("foo() has got an incompatible value for x: 1")):
         foo(1)
-    @typecheck
+    @tc.typecheck
     def bar(x: tc.any((int, float), tc.has("^foo$"), tc.enum(b"X", b"Y"))):
         pass
     bar((1, 1.0))
@@ -1068,14 +1067,14 @@ def test_any1():
 def test_any2():
     nothing_at_all = ((type(None), ) * 1000)
     either_nothing = tc.any(tc.any(tc.any(tc.any(*nothing_at_all), *nothing_at_all), *nothing_at_all), *nothing_at_all)
-    @typecheck
+    @tc.typecheck
     def biz(x) -> either_nothing:
         return x
     with expected(ReturnValueError("biz() has returned an incompatible value: anything")):
         biz("anything")
 
 def test_any3():
-    @typecheck
+    @tc.typecheck
     def accept_number(x: tc.any(int, tc.has("^[0-9]+$"))):
         return int(x) + 1
     assert accept_number(1) == 2
@@ -1086,11 +1085,11 @@ def test_any3():
 
 
 def test_all1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.all()):
         pass
     foo(foo)   # an empty all() accepts anything
-    @typecheck
+    @tc.typecheck
     def bar(x: tc.all(tc.has("abcdef"), tc.has("defghi"), tc.has("^abc"))):
         pass
     bar("abcdefghijklm")
@@ -1102,7 +1101,7 @@ def test_all1():
 def test_all2():
     def complete_blocks(arg):
        return len(arg) % 512 == 0
-    @typecheck
+    @tc.typecheck
     def foo_all(arg: tc.all(tc.any(bytes,bytearray), complete_blocks)): pass
     foo_all(b"x" * 512)              # OK
     foo_all(bytearray(b"x" * 1024))  # OK
@@ -1113,11 +1112,11 @@ def test_all2():
 
 
 def test_none1():
-    @typecheck
+    @tc.typecheck
     def foo(x: tc.none()):
         pass
     foo(foo)   # an empty none() accepts anything
-    @typecheck
+    @tc.typecheck
     def taboo(x: tc.none(tc.has("foo"), tc.has("bar"))):
         pass
     taboo("boofar")
@@ -1135,7 +1134,7 @@ def test_none2():
         pass
     def classname_contains_Test(arg):
        return type(arg).__name__.find("Test") >= 0
-    @typecheck
+    @tc.typecheck
     def no_tests_please(arg: tc.none(TestCase, classname_contains_Test)): pass
     no_tests_please("stuff")        # OK
     with expected(InputParameterError("no_tests_please() has got an incompatible value for arg: <")):
@@ -1174,11 +1173,11 @@ def test_custom_exceptions():
 
 
 def test_disable():
-    @typecheck
+    @tc.typecheck
     def foo(x: int):
         pass
     tc.disable() # disable-only switch, no further proxying is performed
-    @typecheck
+    @tc.typecheck
     def bar(x: int):
         pass
     foo(1)
