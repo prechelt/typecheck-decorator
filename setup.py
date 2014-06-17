@@ -36,7 +36,7 @@ class  install_with_test(stdinstall):
          ##pip/setuptools makes this unbuffering unhelpful:
          #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1) # make line-buffered
          #sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1) # make line-buffered
-         import typecheck.test_typecheck_decorator  # execute post-install test
+         #import typecheck.test_typecheck_decorator  # execute post-install test (during beta only)
 
 
 setup(
