@@ -8,33 +8,29 @@
 # Distributed under BSD license.
 
 __all__ = [
-
 # decorators:
-"typecheck", "typecheck_with_exceptions",
-
-# check predicates:
-"optional", "hasattrs", "has",
-"sequence_of", "tuple_of", "list_of", "dict_of",
-"enum", "any", "all", "none", "anything",
-
+  "typecheck", "typecheck_with_exceptions",
+# check predicate generators:
+  "optional",
+  "hasattrs", "re",
+  "seq_of", "map_of",
+  "range", "enum",
+  "any", "all", "none",
+# check predicate generators:
+  "anything",
 # exceptions:
-"TypeCheckError", "InputParameterError", "ReturnValueError",
-"TypeCheckSpecificationError",
-
+  "TypeCheckError", "InputParameterError", "ReturnValueError",
+  "TypeCheckSpecificationError",
 # utility methods:
-"disable",  # deprecated
-
+  "disable",  # deprecated
 ]
 
-################################################################################
-
 import builtins
+import collections.abc
 import inspect
 import functools
-import re
-
-callable = lambda x: hasattr(x, "__call__")
-anything = lambda x: True
+import random
+import re as regex_module
 
 ################################################################################
 
@@ -91,9 +87,9 @@ class TypeChecker(Checker):
 
 Checker.register(inspect.isclass, TypeChecker)
 
-################################################################################
 
-issequence = lambda x: isinstance(x, tuple) or isinstance(x, list)
+def issequence(x):
+    return isinstance(x, collections.abc.Sequence)
 
 class FixedSequenceChecker(Checker):
 
@@ -117,7 +113,32 @@ class FixedSequenceChecker(Checker):
 
 Checker.register(issequence, FixedSequenceChecker)
 
-################################################################################
+
+def isnamedtuple(x):
+    return isinstance(x, tuple) and ismapping(x.__dict__)
+
+def ismapping(x):
+    return isinstance(x, collections.abc.Mapping)
+
+class FixedMappingChecker(Checker):
+
+    def __init__(self, the_mapping):
+        self._checks = { key: Checker.create(val)
+                         for key,val in the_mapping.items() }
+
+    def check(self, themap):
+        if isnamedtuple(themap):
+            themap = vars(themap)
+            assert ismapping(themap)
+        if not ismapping(themap) or len(themap) != len(self._checks):
+            return False
+        for key, value in themap.items():
+                if not key in self._checks or not self._checks[key](value):
+                    return False
+        return True
+
+Checker.register(ismapping, FixedMappingChecker)
+
 
 class CallableChecker(Checker):
 
@@ -127,42 +148,35 @@ class CallableChecker(Checker):
     def check(self, value):
         return bool(self._callable(value))
 
-Checker.register(callable, CallableChecker)
+Checker.register(builtins.callable, CallableChecker)
 
 ################################################################################
 
-class OptionalChecker(Checker):
-
+class optional(Checker):
     def __init__(self, check):
         self._check = Checker.create(check)
 
     def check(self, value):
         return value is Checker.no_value or value is None or self._check.check(value)
 
-optional = OptionalChecker
 
-################################################################################
-
-class HasAttrChecker(Checker):
-
+class hasattrs(Checker):
     def __init__(self, *attrs):
         self._attrs = attrs
+        assert all([type(a) == str for a in attrs])
 
     def check(self, value):
         return builtins.all([hasattr(value, attr) for attr in self._attrs])
 
-hasattrs = HasAttrChecker
 
-################################################################################
-
-class RegexChecker(Checker):
-
+class re(Checker):
     _regex_eols = { str: "$", bytes: b"$" }
     _value_eols = { str: "\n", bytes: b"\n" }
 
     def __init__(self, regex):
         self._regex_t = type(regex)
-        self._regex = re.compile(regex)
+        assert type(regex) in [str, bytes]
+        self._regex = regex_module.compile(regex)
         self._regex_eol = regex[-1:] == self._regex_eols.get(self._regex_t)
         self._value_eol = self._value_eols[self._regex_t]
 
@@ -171,61 +185,72 @@ class RegexChecker(Checker):
                (not self._regex_eol or not value.endswith(self._value_eol)) and \
                self._regex.search(value) is not None
 
-has = RegexChecker
 
-################################################################################
+class seq_of(Checker):
 
-class SequenceOfChecker(Checker):
-
-    def __init__(self, check):
+    def __init__(self, check, checkonly=12):
         self._check = Checker.create(check)
-        self._allowable_types = (list, tuple)
+        self._checkonly = int(checkonly)
+        assert self._checkonly >= 2
 
     def check(self, value):
-        return builtins.any([isinstance(value, t) for t in self._allowable_types]) and \
-               functools.reduce(lambda r, v: r and self._check.check(v), value, True)
+        if not isinstance(value, collections.abc.Sequence):
+            return False
+        if len(value) == 0:
+            return True
+        elif len(value) == 1:
+            return self._check.check(value[0])
+        if len(value) <= self._checkonly:
+            checkhere = builtins.range(len(value))
+        else:
+            checkhere = random.sample(builtins.range(1,len(value)-1-1),
+                                      self._checkonly-2)
+            checkhere += [0, len(value)-1]  # always check first and last
+        for idx in checkhere:
+            if not self._check.check(value[idx]):
+                return False
+        return True
 
-sequence_of = SequenceOfChecker
 
-################################################################################
+class map_of(Checker):
 
-class TupleOfChecker(SequenceOfChecker):
-
-    def __init__(self, check):
-        self._check = Checker.create(check)
-        self._allowable_types = (tuple,)
-
-tuple_of = TupleOfChecker
-
-################################################################################
-
-class ListOfChecker(SequenceOfChecker):
-
-    def __init__(self, check):
-        self._check = Checker.create(check)
-        self._allowable_types = (list,)
-
-list_of = ListOfChecker
-
-################################################################################
-
-class DictOfChecker(Checker):
-
-    def __init__(self, key_check, value_check):
+    def __init__(self, key_check, value_check, checkonly=10):
         self._key_check = Checker.create(key_check)
         self._value_check = Checker.create(value_check)
+        self._checkonly = int(checkonly)
+        assert self._checkonly >= 1
 
     def check(self, value):
-        return isinstance(value, dict) and \
-               functools.reduce(lambda r, t: r and self._key_check.check(t[0]) and \
-                                             self._value_check.check(t[1]),
-                                value.items(), True)
+        if not isinstance(value, collections.abc.Mapping):
+            return False
+        count = 0
+        for mykey, myvalue in value.items():
+            if not self._key_check.check(mykey) or \
+               not self._value_check.check(myvalue):
+                return False
+            count += 1
+            if count == self._checkonly:
+                break
+        return True
 
-dict_of = DictOfChecker
+class range(Checker):
 
-################################################################################
+    def __init__(self, low, high):
+        assert type(low) == type(high)
+        self._low = low
+        self._high = high
+        self._rangetype = type(high)
+        assert hasattr(high, "__le__") and hasattr(high, "__ge__")
+        # Limitation: presence of le and ge does not guarantee total ordering semantics!
+        # And even object() has these attributes. So expect failures.
+        assert low < high
 
-class EnumChecker(Checker):
+    def check(self, value):
+        return (type(value) == self._rangetype and
+                value >= self._low and value <= self._high)
+
+
+class enum(Checker):
 
     def __init__(self, *values):
         self._values = values
@@ -233,11 +258,8 @@ class EnumChecker(Checker):
     def check(self, value):
         return value in self._values
 
-enum = EnumChecker
 
-################################################################################
-
-class EitherTypeChecker(Checker):
+class any(Checker):
 
     def __init__(self, *args):
         self._checks = tuple(Checker.create(arg) for arg in args)
@@ -249,11 +271,8 @@ class EitherTypeChecker(Checker):
         else:
             return False
 
-any = EitherTypeChecker
 
-################################################################################
-
-class EveryTypeChecker(Checker):
+class all(Checker):
 
     def __init__(self, *args):
         self._checks = tuple(Checker.create(arg) for arg in args)
@@ -265,11 +284,8 @@ class EveryTypeChecker(Checker):
         else:
             return True
 
-all = EveryTypeChecker
 
-################################################################################
-
-class NoTypeChecker(Checker):
+class none(Checker):
 
     def __init__(self, *args):
         self._checks = tuple(Checker.create(arg) for arg in args)
@@ -281,7 +297,9 @@ class NoTypeChecker(Checker):
         else:
             return True
 
-none = NoTypeChecker
+
+def anything(x):
+    return True
 
 ################################################################################
 

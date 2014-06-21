@@ -92,10 +92,10 @@ The original function will be called then and its result
 checked likewise if a result annotation had been provided.
 
 
-4 The three sorts of annotation
-===============================
+4 The four sorts of annotation
+==============================
 
-``@tc.typecheck`` allows three different kinds of annotation to
+``@tc.typecheck`` allows four different kinds of annotation to
 some parameter PAR:
 - **Types.**
   The annotation is an expression returning a type, typically
@@ -103,13 +103,17 @@ some parameter PAR:
 - **Predicates.** The annotation is a function that turns the argument
   into True (for an acceptable argument)
   or False (for all others).
-  Note that a predicate is a function, not a function call.
+  Note that a predicate is a function, not a function call -- but it may
+  be the result of a function call.
 - **Tuples** and **Lists.**
   The annotation is a tuple or list (rather than a type or a predicate)
   as explained below.
-
+- **Dictionaries.**
+  The annotation is a dictionary (rather than a type or a predicate)
+  as explained below.
 The following subsections explain each of them.
-The same annotations are valid for results (as opposed to parameters) as well.
+The same annotations are valid for function results (as opposed to parameters)
+as well.
 
 
 4.1 Types as annotations
@@ -162,7 +166,8 @@ a predicate on the fly.
 -----------------------------------
 
 The annotation is an expression that evaluates to a tuple or list
-(rather than a type or a predicate).
+(rather than a type or a predicate);
+more precisely, it can be any collections.abc.Sequence object.
 This is a very pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in sequence types.
@@ -189,7 +194,7 @@ It is easiest explained by examples:
 
 General meaning:
 - The annotation is a sequence of length N.
-  Its entries could themselves serve as annotations.
+  Its entries could themselves each serve as an annotation.
 - If it is a list, the argument must be a list (or list subclass) object.
 - If it is a tuple, the argument can be a tuple, tuple subclass object,
   list, or list subclass object.
@@ -199,6 +204,51 @@ General meaning:
 - The annotation will match only an argument of exactly length N.
 - The argument's i-th element must fulfil the condition implied by
   the annotation's i-th element.
+
+``collections.namedtuple`` classes produce tuple objects, so you can pass
+named tuples as arguments for methods having Sequence annotations without problem.
+Never use a named tuple for an annotation, though, because its names
+will be ignored, which is confusing and error-prone.
+
+
+4.4 Dictionaries as annotations
+-------------------------------
+
+The annotation is an expression that evaluates to a dictionary
+(rather than a type or a predicate);
+more precisely, it can be any collections.abc.Mapping object.
+Again, this is a pragmatic extension for programs that do not model
+every little data structure as a class
+but rather make heavy use of the built-in types.
+The annotation prescribes a fixed set of keys and a type for
+the value of each key. All keys must be present.
+
+Examples:
+
+   ```Python
+   @tc.typecheck
+   def foo6(point:dict(x=int,y=int)):
+     pass
+   foo6(dict(x=1, y=2))         # OK
+   foo6({"x":1, "y":2})         # OK
+   foo6(collections.UserDict(x=1, y=2))  # OK
+   MyNT = collections.namedtuple("MyNT", ["x","y"])
+   foo6(MyNT(x=1, y=2))         # OK, see discussion below
+   foo6(dict(x=1))              # Wrong: key y is missing
+   foo6(dict(x=1, y="huh?"))    # Wrong: type error for y
+   foo6(dict(x=1, y=2, z=10))   # Wrong: key z is not allowed
+   ```
+
+Although ``collections.namedtuple`` classes produce objects that are
+Sequences, not Mappings, you can pass them as arguments to Mapping-annotated
+parameters; they will be interpreted as dictionaries by the typechecks.
+Never use a named tuple for an annotation, though, because that will
+create a Sequence annotation (not a Mapping annotation) and its names
+will be ignored, which is confusing and error-prone.
+If you want to annotate the use of named tuples, use something like
+``tc.all(MyNT, dict(x=int, y=int))`` (as explained below) or
+``MyNT(x=int, y=int).__dict__`` (which is a dictionary but shows the intent
+of passing MyNTs as arguments).
 
 
 5 Predicate generators
@@ -261,96 +311,72 @@ Allows all arguments that possess every one of those attributes.
 
    foo(FakeIO())       # OK
    del FakeIO.flush
-   foo(FakeIO())       # Wrong, because flush attribute is missing
+   foo(FakeIO())       # Wrong, because flush attribute is now missing
    ```
 
-**tc.has(regexp)**:
+**tc.re(regexp)**:
 
 Takes a string containing a regular expression string.
-Allows all arguments that are strings and contain what is described
-by that regular expression (as defined by ``re.search``).
+Allows all arguments that are strings and contain (as per ``re.search``)
+what is described by that regular expression.
 Also works for bytestrings if you use a bytestring regular expression.
 
    ```Python
    @tc.typecheck
-   def foo(hexnumber: tc.has("^[0-9A-F]+$")) -> tc.has("^[0-9]+$"):
+   def foo(hexnumber: tc.re("^[0-9A-F]+$")) -> tc.re("^[0-9]+$"):
        return "".join(reversed(k))
 
    foo("1234")        # OK
    foo("12AB")        # Wrong: argument OK, but result not allowed
    ```
 
-**tc.sequence_of(annot)**:
+**tc.seq_of(annot, checkonly=12)**:
 
 Takes any other annotation ``annot``.
-Allows any argument that is a sequence (tuple or list) in which
-each element is allowed by ``annot``
+Allows any argument that is a sequence
+(tuple or list, in fact any ``collections.abc.Sequence``)
+in which each element is allowed by ``annot``.
+Not all violations will be detected because for efficiency reasons,
+the check will cover only a sample of ``checkonly`` elements of the sequence.
+This sample always includes the first and last element, the rest
+is a random sample.
 
    ```Python
    @tc.typecheck
-   def foo_so(s: tc.sequence_of(str)):  pass
+   def foo_so(s: tc.seq_of(str)):  pass
 
    foo_so(["a", "b"])         # OK
    foo_so(("a", "b"))         # OK, a tuple
    foo_so([])                 # OK
    foo_so(["a"])              # OK
-   foo_so("a")                # Wrong: not a sequence in sequence_of sense
+   foo_so("a")                # Wrong: not a sequence in seq_of sense
    foo_so(["a", 1])           # Wrong: inhomogeneous
+   almost_ok = 1000*["a"] + [666]
+   foo_so(almost_ok)          # Wrong: inhomogeneous, will fail
+   almost_ok += ["a"]
+   foo_so(almost_ok)          # Wrong, but will fail only 1% of the time
    ```
 
-**tc.tuple_of(annot)**:
-
-Takes any other annotation ``annot``.
-Allows any argument that is a tuple in which
-each element is allowed by ``annot``
-
-   ```Python
-   @tc.typecheck
-   def foo_so(s: tc.tuple_of(str)):  pass
-
-   foo_so(["a", "b"])         # Wrong: not a tuple
-   foo_so(("a", "b"))         # OK
-   foo_so(())                 # OK
-   foo_so(("a",))             # OK
-   foo_so("a")                # Wrong: not a sequence in sequence_of sense
-   foo_so(("a", 1))           # Wrong: inhomogeneous
-   ```
-
-**tc.list_of(annot)**:
-
-Takes any other annotation ``annot``.
-Allows any argument that is a list in which
-each element is allowed by ``annot``
-
-   ```Python
-   @tc.typecheck
-   def foo_so(s: tc.list_of(str)):  pass
-
-   foo_so(["a", "b"])         # OK
-   foo_so(("a", "b"))         # Wrong, not a list
-   foo_so([])                 # OK
-   foo_so(["a"])              # OK
-   foo_so("a")                # Wrong: not a sequence in list_of sense
-   foo_so(["a", 1])           # Wrong: inhomogeneous
-   ```
-
-**tc.dict_of(keys_annot, values_annot)**:
+**tc.map_of(keys_annot, values_annot, checkonly=10)**:
 
 Takes two annotations ``keys_annot`` and ``values_annot``.
-Allows any argument that is a dictionary in which
-each key is allowed by keys_annot and
+Allows any argument that is a ``collections.abc.Mapping`` (typically a dict)
+in which each key is allowed by keys_annot and
 each value is allowed by values_annot.
+Not all violations will be detected because for efficiency reasons,
+the check will cover only the first ``checkonly`` pairs returned by the
+mapping's iterator.
+In contrast to ``tc.seq_of``, this sample is not a variable random sample.
 
    ```Python
    @tc.typecheck
-   def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
+   def foo_do(map: tc.map_of(int, str)) -> tc.map_of(str, int):
        return { v: k  for k,v in x.items() }
 
    assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
    foo({})             # OK: an empty dict is still a dict
    foo(None)           # Wrong: None is not a dict
-   foo({"1": "2"})     # Wrong: violates values_annot of argument
-                         (also violates keys_annot of result)
+   foo({"1": "2"})     # Wrong: violates values_annot of arg and keys_annot of result
    ```
 
 **tc.enum(*values)**:
@@ -368,6 +394,27 @@ Effectively defines an arbitrary, ad-hoc enumeration type.
    foo_ev(1.0)   # Wrong: not in values list
    foo_ev([1,1,1,1])  # OK
    ```
+
+
+**tc.range(low, high)**:
+
+Takes two limit values low and high that must both have
+the same type (typically int or float). Will allow all arguments
+having that same type and lying between low and high.
+The type needs not be numeric: any type supporting
+__le__ and __ge__ with range semantics will do.
+
+   ```Python
+   @tc.typecheck
+   def foo(arg: tc.range(0.0, 100.0)): pass
+
+   foo(0.0)    # OK
+   foo(8.4e-3) # OK
+   foo(100.0)  # OK
+   foo(1)      # Wrong: not a float
+   foo(111.0)  # Wrong: value too large
+   ```
+
 
 **tc.any(*annots)**:
 
@@ -433,6 +480,13 @@ You could think of it as "not any" or as "all not".
    no_tests_please(AddressTest())  # Wrong: suspicious class name
    ```
 
+
+5.2 Built-in fixed predicates
+-----------------------------
+
+Note that these must be used without parentheses: You need to submit
+the function, not call it.
+
 **tc.anything**:
 
 This is the null typecheck: Will accept any value whatsoever, including None.
@@ -441,20 +495,36 @@ but explicitly declaring that no restrictions are intended may be
 desirable for pythonic clarity.
 Note: This is equivalent to ``tc.all()``, that is, all-of-nothing,
 and also equivalent to ``tc.none()``, that is, none-of-nothing,
-but is much less confusing.
+but is much clearer.
 
    ```Python
    @tc.typecheck
    def foo_any(arg: tc.anything) --> tc.anything:
        pass
 
-   foo_ev(None)             # OK
-   foo_ev([[[[{"one":True}]]]]])  # OK
-   foo_ev(foo_ev)           # OK
+   foo_any(None)             # OK
+   foo_any([[[[{"one":True}]]]]])  # OK
+   foo_any(foo_any)          # OK
    ```
 
 
-5.2 Custom predicate generators
+**callable**
+
+The Python builtin predicate ``callable()`` is also useful
+as a typechecking predicate.
+
+   ```Python
+   @tc.typecheck
+   def foo_callable(func: callable, msg: str):
+       func(msg)
+
+   foo_callable(print)      # OK
+   foo_callable(open)       # OK
+   foo_callable("print")    # Wrong
+   ```
+
+
+5.3 Custom predicate generators
 -------------------------------
 
 If the above library of generators is insufficient for your needs,
@@ -554,6 +624,16 @@ Version history
     sure whether it will work on other platforms and with other Python versions
   Feedback is welcome!
 
+- **1.0**: ???
+  - removed list_of and tuple_of
+  - renamed sequence_of to seq_of and generalized it to collections.abc.Sequence
+  - renamed dict_of to map_of and generalized it to collections.abc.Mapping
+  - renamed regexp matching from 'has' to 're'
+  - added checkonly limit to seq_of and map_of
+  - added Mapping annotations (analogous to Sequence annotations)
+  - added range
+  - provided the predicates with appropriate __name__ attributes
+
 Similar packages
 ================
 
@@ -571,11 +651,5 @@ Similar packages
 TO DO
 =====
 
-- use decorator package
-- add predicate generator for fixed-structure dict and namedtuple
-- add predicate generator for int ranges and float ranges
-- replace ``disable()`` by
-  ``mode(decorate=True, typecheck=True, collectioncheck_limit=False)``
-  collectioncheck_limit is an integer for the maximum number of random
-  items to test in a collection (rather than testing all of them)
+- use decorator package?
 - add more specialized exception messages, e.g. for sequences and dicts
