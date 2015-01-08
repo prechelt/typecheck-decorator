@@ -189,21 +189,27 @@ sequence_of = SequenceOfChecker
 
 ################################################################################
 
-class TupleOfChecker(SequenceOfChecker):
+class TupleOfChecker(Checker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
-        self._allowable_types = (tuple,)
+
+    def check(self, value):
+        return isinstance(value, tuple) and \
+            functools.reduce(lambda r, v: r and self._check.check(v), value, True)
 
 tuple_of = TupleOfChecker
 
 ################################################################################
 
-class ListOfChecker(SequenceOfChecker):
+class ListOfChecker(Checker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
-        self._allowable_types = (list,)
+
+    def check(self, value):
+        return isinstance(value, list) and \
+            functools.reduce(lambda r, v: r and self._check.check(v), value, True)
 
 list_of = ListOfChecker
 
