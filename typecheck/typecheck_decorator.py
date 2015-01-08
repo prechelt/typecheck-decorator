@@ -32,6 +32,7 @@ import builtins
 import inspect
 import functools
 import re
+import collections
 
 callable = lambda x: hasattr(x, "__call__")
 anything = lambda x: True
@@ -179,10 +180,9 @@ class SequenceOfChecker(Checker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
-        self._allowable_types = (list, tuple)
 
     def check(self, value):
-        return builtins.any([isinstance(value, t) for t in self._allowable_types]) and \
+        return isinstance(value, collections.Sequence) and \
                functools.reduce(lambda r, v: r and self._check.check(v), value, True)
 
 sequence_of = SequenceOfChecker
@@ -216,7 +216,7 @@ class DictOfChecker(Checker):
         self._value_check = Checker.create(value_check)
 
     def check(self, value):
-        return isinstance(value, dict) and \
+        return isinstance(value, collections.Mapping) and \
                functools.reduce(lambda r, t: r and self._key_check.check(t[0]) and \
                                              self._value_check.check(t[1]),
                                 value.items(), True)
