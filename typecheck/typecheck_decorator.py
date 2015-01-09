@@ -13,8 +13,8 @@ __all__ = [
 "typecheck", "typecheck_with_exceptions",
 
 # check predicates:
-"optional", "hasattrs", "has",
-"sequence_of", "tuple_of", "list_of", "dict_of",
+"optional", "hasattrs", "has", "issequence", "ismapping",
+"sequence_of", "tuple_of", "list_of", "dict_of", "mapping_of",
 "enum", "any", "all", "none", "anything",
 
 # exceptions:
@@ -33,6 +33,7 @@ import inspect
 import functools
 import re
 import collections
+import sys
 
 callable = lambda x: hasattr(x, "__call__")
 anything = lambda x: True
@@ -93,8 +94,12 @@ class TypeChecker(Checker):
 Checker.register(inspect.isclass, TypeChecker)
 
 ################################################################################
+def isstring(x):
+    tc = TypeChecker(basestring if sys.version_info[0] == 2 else str)
+    return tc.check(x)
 
-issequence = lambda x: isinstance(x, tuple) or isinstance(x, list)
+issequence = lambda x: isinstance(x, collections.Sequence) and not isstring(x)
+ismapping = lambda x: isinstance(x, collections.Mapping)
 
 class FixedSequenceChecker(Checker):
 
@@ -222,12 +227,28 @@ class DictOfChecker(Checker):
         self._value_check = Checker.create(value_check)
 
     def check(self, value):
-        return isinstance(value, collections.Mapping) and \
+        return isinstance(value, dict) and \
                functools.reduce(lambda r, t: r and self._key_check.check(t[0]) and \
                                              self._value_check.check(t[1]),
                                 value.items(), True)
 
 dict_of = DictOfChecker
+
+################################################################################
+
+class MappingOfChecker(Checker):
+
+    def __init__(self, key_check, value_check):
+        self._key_check = Checker.create(key_check)
+        self._value_check = Checker.create(value_check)
+
+    def check(self, value):
+        return isinstance(value, collections.Mapping) and \
+               functools.reduce(lambda r, t: r and self._key_check.check(t[0]) and \
+                                             self._value_check.check(t[1]),
+                                value.items(), True)
+
+mapping_of = MappingOfChecker
 
 ################################################################################
 

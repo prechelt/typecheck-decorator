@@ -351,6 +351,33 @@ each value is allowed by values_annot.
    foo({"1": "2"})     # Wrong: violates values_annot of argument
                          (also violates keys_annot of result)
    ```
+   
+**tc.mapping_of(keys_annot, values_annot)**:
+
+Takes two annotations ``keys_annot`` and ``values_annot``.
+Exactly like dict_of except allows arguments that satisfy the *abstract base class* Mapping (defined in collections).
+This allows duck-typed dict-like classes.
+
+   ```Python
+   class DuckTypedDict(collections.Mapping):
+      def __getitem__(self, item):
+         pass
+      def __iter__(self):
+         pass
+      def __len__(self):
+         pass
+   
+   @typecheck
+   def foo_do(map: tc.mapping_of(int, str)) -> tc.mapping_of(str, int):
+       return { v: k  for k,v in x.items() }
+
+   foo(DuckTypedDict())  # OK
+   assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
+   foo({})             # OK: an empty dict is still a dict
+   foo(None)           # Wrong: None is not a dict
+   foo({"1": "2"})     # Wrong: violates values_annot of argument
+                         (also violates keys_annot of result)
+   ```
 
 **tc.enum(*values)**:
 
@@ -366,6 +393,56 @@ Effectively defines an arbitrary, ad-hoc enumeration type.
    foo_ev(1)     # OK
    foo_ev(1.0)   # Wrong: not in values list
    foo_ev([1,1,1,1])  # OK
+   ```
+
+**tc.issequence**:
+
+Takes no arguments.
+Allows any argument that satisfies the *abstract base class* Sequence (defined in collections) except string. This allows
+duck-typed list-like classes.
+
+   ```Python
+   import collections
+   
+   class DuckTypedList(collections.Sequence):
+      def __getitem__(self, item):
+         pass
+      def __len__(self):
+         pass
+   
+   @typecheck
+   def foo(arg: tc.issequence): pass
+
+   foo(DuckTypedList())  # OK
+   foo([1, 2, 3])        # OK
+   foo((1, 2, 3))        # OK
+   foo(123)              # Wrong: not a sequence
+   foo("hi")             # Wrong: string
+   ```
+
+**tc.ismapping**:
+
+Takes no arguments.
+Allows any argument that satisfies the *abstract base class* Mapping (defined in collections) except string. This allows
+duck-typed dict-like classes.
+
+   ```Python
+   import collections
+   
+   class DuckTypedDict(collections.Mapping):
+      def __getitem__(self, item):
+         pass
+      def __iter__(self):
+         pass
+      def __len__(self):
+         pass
+   
+   @typecheck
+   def foo(arg: tc.ismapping): pass
+
+   foo(DuckTypedDict())  # OK
+   foo({"a": 1})         # OK
+   foo([1, 2, 3])        # Wrong: not a mapping
    ```
 
 **tc.any(*annots)**:
