@@ -887,7 +887,7 @@ print("ok")
 print("FixedSequenceChecker: ", end="")
 
 @typecheck
-def foo(a: (int,str) = (1,"!"), *, k: tc.optional(()) = ()) -> (str, ()):
+def foo(a: (int, str)=(1, "!"), *, k: tc.optional(()) = ()) -> (str, ()):
     return a[1], k
 
 assert foo() == ("!", ())
@@ -1196,43 +1196,6 @@ print("ok")
 
 ############################################################################
 
-print("tuple_of: ", end="")
-
-@typecheck
-def foo(x: tc.tuple_of(int)) -> tc.tuple_of(float):
-    return tuple(map(float, x))
-
-assert foo(()) == ()
-assert foo((1, 2, 3)) == (1.0, 2.0, 3.0)
-
-with expected(InputParameterError("foo() has got an incompatible value for x: ('1.0',)")):
-    foo(("1.0",))
-
-with expected(InputParameterError("foo() has got an incompatible value for x: []")):
-    foo([])
-
-###################
-
-@typecheck
-def foo(x: tc.tuple_of([tc.has("^[01]+$"), int])) -> bool:
-    return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
-                            x, True)
-
-assert foo((["1010", 10], ["0101", 5]))
-assert not foo((["1010", 10], ["0111", 77]))
-
-###################
-
-assert tc.tuple_of(tc.optional(tc.has("^foo$")))(("foo", None, "foo")) and \
-       tc.tuple_of(tc.optional(tc.has("^foo$"))).check(("foo", None, "foo"))
-
-assert not tc.tuple_of(tc.optional(tc.has("^foo$")))(("123", None, "foo")) and \
-       not tc.tuple_of(tc.optional(tc.has("^foo$"))).check(("123", None, "foo"))
-
-print("ok")
-
-############################################################################
-
 print("list_of: ", end="")
 
 @typecheck
@@ -1270,10 +1233,10 @@ print("ok")
 
 ############################################################################
 
-print("sequence_of: ", end="")
+print("seq_of: ", end="")
 
 @typecheck
-def foo(x: tc.sequence_of(int)) -> tc.sequence_of(float):
+def foo(x: tc.seq_of(int)) -> tc.seq_of(float):
     return list(map(float, x))
 
 assert foo([]) == []
@@ -1286,7 +1249,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: ['
 ###################
 
 @typecheck
-def foo(x: tc.sequence_of((tc.has("^[01]+$"), int))) -> bool:
+def foo(x: tc.seq_of((tc.has("^[01]+$"), int))) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1295,11 +1258,11 @@ assert not foo([("1010", 10), ("0111", 77)])
 
 ###################
 
-assert tc.sequence_of(tc.optional(tc.has("^foo$")))(["foo", None, "foo"]) and \
-       tc.sequence_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "foo"])
+assert tc.seq_of(tc.optional(tc.has("^foo$")))(["foo", None, "foo"]) and \
+       tc.seq_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "foo"])
 
-assert not tc.sequence_of(tc.optional(tc.has("^foo$")))(["123", None, "foo"]) and \
-       not tc.sequence_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "1234"])
+assert not tc.seq_of(tc.optional(tc.has("^foo$")))(["123", None, "foo"]) and \
+       not tc.seq_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "1234"])
 
 print("ok")
 
@@ -1355,56 +1318,6 @@ print("ok")
 
 ############################################################################
 
-print("mapping_of: ", end="")
-
-@typecheck
-def foo(x: tc.mapping_of(int, str)) -> tc.mapping_of(str, int):
-    return { v: k for k, v in x.items() }
-
-assert foo({}) == {}
-assert foo({1: "1", 2: "2"}) == {"1": 1, "2": 2}
-
-with expected(InputParameterError("foo() has got an incompatible value for x: []")):
-    foo([])
-
-with expected(InputParameterError("foo() has got an incompatible value for x: {'1': '2'}")):
-    foo({"1": "2"})
-
-with expected(InputParameterError("foo() has got an incompatible value for x: {1: 2}")):
-    foo({1: 2})
-
-###################
-
-@typecheck
-def foo(*, k: tc.mapping_of((int, int), [tc.has("^[0-9]+$"), tc.has("^[0-9]+$")])):
-    return functools.reduce(lambda r, t: r and str(t[0][0]) == t[1][0] and str(t[0][1]) == t[1][1],
-                            k.items(), True)
-
-assert foo(k = { (1, 2): ["1", "2"], (3, 4): ["3", "4"]})
-assert not foo(k = { (1, 3): ["1", "2"], (3, 4): ["3", "4"]})
-assert not foo(k = { (1, 2): ["1", "2"], (3, 4): ["3", "5"]})
-
-with expected(InputParameterError("foo() has got an incompatible value for k: {(1, 2): ['1', '2'], (3, 4): ['3', 'x']}")):
-    foo(k = { (1, 2): ["1", "2"], (3, 4): ["3", "x"]})
-
-with expected(InputParameterError("foo() has got an incompatible value for k: {(1, 2): ['1', '2'], (3,): ['3', '4']}")):
-    foo(k = { (1, 2): ["1", "2"], (3, ): ["3", "4"]})
-
-with expected(InputParameterError("foo() has got an incompatible value for k: {(1, 2): ['1', '2'], (3, 4.0): ['3', '4']}")):
-    foo(k = { (1, 2): ["1", "2"], (3, 4.0): ["3", "4"]})
-
-###################
-
-assert tc.mapping_of(int, tc.optional(str))({ 1: "foo", 2: None }) and \
-       tc.mapping_of(int, tc.optional(str)).check({ 1: "foo", 2: None })
-
-assert not tc.mapping_of(int, tc.optional(str))({ None: "foo", 2: None }) and \
-       not tc.mapping_of(int, tc.optional(str)).check({ None: "foo", 2: None })
-
-print("ok")
-
-############################################################################
-
 print("enum: ", end="")
 
 @typecheck
@@ -1434,59 +1347,6 @@ def foo(x: tc.optional(tc.enum(1, 2)) = 2):
     return x
 
 assert foo() == 2
-
-print("ok")
-
-############################################################################
-
-print("issequence: ", end="")
-
-@typecheck
-def foo(x: tc.issequence):
-    pass
-
-class FooSequence(collections.Sequence):
-    def __getitem__(self, item):
-        pass
-    def __len__(self):
-        pass
-
-foo(FooSequence())
-foo((1, 2, 3))
-foo([1, 2, 3])
-
-with expected(InputParameterError("foo() has got an incompatible value for x: 123")):
-    foo(123)
-
-with expected(InputParameterError("foo() has got an incompatible value for x: X")):
-    foo("X")
-
-print("ok")
-
-############################################################################
-
-print("ismapping: ", end="")
-
-@typecheck
-def foo(x: tc.ismapping):
-    pass
-
-class FooMapping(collections.Mapping):
-    def __getitem__(self, item):
-        pass
-    def __iter__(self):
-        pass
-    def __len__(self):
-        pass
-
-foo(FooMapping())
-foo({"a": 1})
-
-with expected(InputParameterError("foo() has got an incompatible value for x: [1, 2, 3]")):
-    foo([1, 2, 3])
-
-with expected(InputParameterError("foo() has got an incompatible value for x: X")):
-    foo("X")
 
 print("ok")
 

@@ -132,6 +132,24 @@ Meaning:
 If the annotation declares type ``T``, the argument ``x`` must fulfil
 ``isinstance(x, T)``, so objects from subclasses of T are acceptable as well.
 
+Abstract base classes defined in the *collections* module are supported for duck-typed parameters:
+
+   ```Python
+   import collections
+   
+   def DuckTypedList(collections.Mapping):
+      def __getitem__(self, item):
+          pass
+      def __iter__(self):
+          pass
+      def __len__(self):
+          pass
+          
+   @typecheck
+   def foo(m: collections.Mapping):
+       pass
+   ```
+
 
 4.2 Predicates as annotations
 -----------------------------
@@ -279,49 +297,56 @@ Also works for bytestrings if you use a bytestring regular expression.
    foo("12AB")        # Wrong: argument OK, but result not allowed
    ```
 
-**tc.sequence_of(annot)**:
+**tc.seq_of(annot)**:
 
 Takes any other annotation ``annot``.
-Allows any argument that is a sequence (tuple or list) in which
-each element is allowed by ``annot``
+Allows any argument that is a sequence (tuple, list, collections.Sequence) in which
+each element is allowed by ``annot``.
+
+*WARNING* - ``str`` satisfies collections.Sequence, meaning that a plain string will satisfy the following
+predicate: ``tc.seq_of(str)`` since each subelement (character) is also string object. Use ``list_of`` if you
+want to restrict to a list of strings (duck-typed or otherwise).
 
    ```Python
+   
+   class DuckTypedSequence(collections.Sequence):
+      def __getitem__(self, item):
+         pass
+      def __len__(self):
+         pass
+   
    @typecheck
    def foo_so(s: tc.sequence_of(str)):  pass
 
-   foo_so(["a", "b"])         # OK
-   foo_so(("a", "b"))         # OK, a tuple
-   foo_so([])                 # OK
-   foo_so(["a"])              # OK
-   foo_so("a")                # Wrong: not a sequence in sequence_of sense
-   foo_so(["a", 1])           # Wrong: inhomogeneous
-   ```
-
-**tc.tuple_of(annot)**:
-
-Takes any other annotation ``annot``.
-Allows any argument that is a tuple in which
-each element is allowed by ``annot``
-
-   ```Python
-   @typecheck
-   def foo_so(s: tc.tuple_of(str)):  pass
-
-   foo_so(["a", "b"])         # Wrong: not a tuple
-   foo_so(("a", "b"))         # OK
-   foo_so(())                 # OK
-   foo_so(("a",))             # OK
-   foo_so("a")                # Wrong: not a sequence in sequence_of sense
-   foo_so(("a", 1))           # Wrong: inhomogeneous
+   foo_so(["a", "b"])          # OK
+   foo_so(("a", "b"))          # OK, a tuple
+   foo_so([])                  # OK
+   foo_so(["a"])               # OK
+   foo_so(DuckTypedSequence()) # OK
+   foo_so("a")                 # Wrong: not a sequence in sequence_of sense
+   foo_so(["a", 1])            # Wrong: inhomogeneous
    ```
 
 **tc.list_of(annot)**:
 
 Takes any other annotation ``annot``.
-Allows any argument that is a list in which
+Allows any argument that satisfies collections.MutableSequence (including built-in list) in which
 each element is allowed by ``annot``
 
    ```Python
+   
+   class DuckTypedList(collections.MutableSequence):
+      def __getitem__(self, item):
+         pass
+      def __setitem__(self, item, value):
+         pass
+      def __delitem__(self, item):
+         pass
+      def __len__(self):
+         pass
+      def insert(self, index, item):
+         pass
+         
    @typecheck
    def foo_so(s: tc.list_of(str)):  pass
 
@@ -329,6 +354,7 @@ each element is allowed by ``annot``
    foo_so(("a", "b"))         # Wrong, not a list
    foo_so([])                 # OK
    foo_so(["a"])              # OK
+   foo_so(DuckTypedList())    # OK
    foo_so("a")                # Wrong: not a sequence in list_of sense
    foo_so(["a", 1])           # Wrong: inhomogeneous
    ```
@@ -336,29 +362,12 @@ each element is allowed by ``annot``
 **tc.dict_of(keys_annot, values_annot)**:
 
 Takes two annotations ``keys_annot`` and ``values_annot``.
-Allows any argument that is a dictionary in which
+Allows any argument that satisfies collections.Mapping (including built-in dict) in which
 each key is allowed by keys_annot and
 each value is allowed by values_annot.
 
    ```Python
-   @typecheck
-   def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
-       return { v: k  for k,v in x.items() }
-
-   assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
-   foo({})             # OK: an empty dict is still a dict
-   foo(None)           # Wrong: None is not a dict
-   foo({"1": "2"})     # Wrong: violates values_annot of argument
-                         (also violates keys_annot of result)
-   ```
    
-**tc.mapping_of(keys_annot, values_annot)**:
-
-Takes two annotations ``keys_annot`` and ``values_annot``.
-Exactly like dict_of except allows arguments that satisfy the *abstract base class* Mapping (defined in collections).
-This allows duck-typed dict-like classes.
-
-   ```Python
    class DuckTypedDict(collections.Mapping):
       def __getitem__(self, item):
          pass
@@ -366,17 +375,17 @@ This allows duck-typed dict-like classes.
          pass
       def __len__(self):
          pass
-   
+         
    @typecheck
-   def foo_do(map: tc.mapping_of(int, str)) -> tc.mapping_of(str, int):
+   def foo_do(map: tc.dict_of(int, str)) -> tc.dict_of(str, int):
        return { v: k  for k,v in x.items() }
 
-   foo(DuckTypedDict())  # OK
    assert foo({1: "one", 2: "two"}) == {"one": 1, "two": 2}  # OK
-   foo({})             # OK: an empty dict is still a dict
-   foo(None)           # Wrong: None is not a dict
-   foo({"1": "2"})     # Wrong: violates values_annot of argument
-                         (also violates keys_annot of result)
+   foo({})              # OK: an empty dict is still a dict
+   foo(DuckTypedDict()) # OK: duck-typed dict is still a dict
+   foo(None)            # Wrong: None is not a dict
+   foo({"1": "2"})      # Wrong: violates values_annot of argument
+                          (also violates keys_annot of result)
    ```
 
 **tc.enum(*values)**:
@@ -394,57 +403,7 @@ Effectively defines an arbitrary, ad-hoc enumeration type.
    foo_ev(1.0)   # Wrong: not in values list
    foo_ev([1,1,1,1])  # OK
    ```
-
-**tc.issequence**:
-
-Takes no arguments.
-Allows any argument that satisfies the *abstract base class* Sequence (defined in collections) except string. This allows
-duck-typed list-like classes.
-
-   ```Python
-   import collections
    
-   class DuckTypedList(collections.Sequence):
-      def __getitem__(self, item):
-         pass
-      def __len__(self):
-         pass
-   
-   @typecheck
-   def foo(arg: tc.issequence): pass
-
-   foo(DuckTypedList())  # OK
-   foo([1, 2, 3])        # OK
-   foo((1, 2, 3))        # OK
-   foo(123)              # Wrong: not a sequence
-   foo("hi")             # Wrong: string
-   ```
-
-**tc.ismapping**:
-
-Takes no arguments.
-Allows any argument that satisfies the *abstract base class* Mapping (defined in collections) except string. This allows
-duck-typed dict-like classes.
-
-   ```Python
-   import collections
-   
-   class DuckTypedDict(collections.Mapping):
-      def __getitem__(self, item):
-         pass
-      def __iter__(self):
-         pass
-      def __len__(self):
-         pass
-   
-   @typecheck
-   def foo(arg: tc.ismapping): pass
-
-   foo(DuckTypedDict())  # OK
-   foo({"a": 1})         # OK
-   foo([1, 2, 3])        # Wrong: not a mapping
-   ```
-
 **tc.any(*annots)**:
 
 Takes any number of arguments, each being a valid annotation.
