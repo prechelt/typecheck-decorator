@@ -568,16 +568,13 @@ assert pxn_qxn(p = 1, q = 2.0) == 3.0
 assert pxn_qxn(p = 1.0, q = 2) == 3.0
 assert pxn_qxn(p = 1.0, q = 2.0) == 3.0
 
-with expected(TypeError, "(?:pxn_qxn\(\) needs keyword-only argument q|"
-                            "pxn_qxn\(\) missing 1 required keyword-only argument: 'q')"):
+with expected(TypeError):
     pxn_qxn(p = 1)
 
-with expected(TypeError, "(?:pxn_qxn\(\) needs keyword-only argument p|"
-                            "pxn_qxn\(\) missing 1 required keyword-only argument: 'p')"):
+with expected(TypeError):
     pxn_qxn(q = 2)
 
-with expected(TypeError, "(?:pxn_qxn\(\) needs keyword-only argument p|"
-                            "pxn_qxn\(\) missing 2 required keyword-only arguments: 'p' and 'q')"):
+with expected(TypeError):
     pxn_qxn()
 
 ###################
@@ -593,12 +590,10 @@ assert pxn_q2n(p = 1.0, q = 2.0) == 3.0
 
 assert pxn_q2n(p = 1) == 3
 
-with expected(TypeError, "(?:pxn_q2n\(\) needs keyword-only argument p|"
-                            "pxn_q2n\(\) missing 1 required keyword-only argument: 'p')"):
+with expected(TypeError):
     pxn_q2n(q = 2)
 
-with expected(TypeError, "(?:pxn_q2n\(\) needs keyword-only argument p|"
-                            "pxn_q2n\(\) missing 1 required keyword-only argument: 'p')"):
+with expected(TypeError):
     pxn_q2n()
 
 ###################
@@ -636,8 +631,7 @@ with expected(InputParameterError("pxn_qxc() has got an incompatible value for q
 with expected(InputParameterError("pxn_qxc() has got an incompatible value for q: <no value>")):
     pxn_qxc(p = 1)
 
-with expected(TypeError, "(?:pxn_qxc\(\) needs keyword-only argument p|"
-                            "pxn_qxc\(\) missing 1 required keyword-only argument: 'p')"):
+with expected(TypeError):
     pxn_qxc(q = 2)
 
 with expected(InputParameterError("pxn_qxc() has got an incompatible value for q: <no value>")):
@@ -662,8 +656,7 @@ with expected(InputParameterError("pxn_q2c() has got an incompatible value for q
 with expected(InputParameterError("pxn_q2c() has got an incompatible value for q: <no value>")):
     pxn_q2c(p = 1)
 
-with expected(TypeError, "(?:pxn_q2c\(\) needs keyword-only argument p|"
-                            "pxn_q2c\(\) missing 1 required keyword-only argument: 'p')"):
+with expected(TypeError):
     pxn_q2c(q = 2)
 
 with expected(InputParameterError("pxn_q2c() has got an incompatible value for q: <no value>")):
