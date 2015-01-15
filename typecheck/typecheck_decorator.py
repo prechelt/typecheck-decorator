@@ -150,10 +150,7 @@ has = RegexChecker
 
 ################################################################################
 
-def isstring(x):
-    tc = TypeChecker(basestring if sys.version_info[0] == 2 else str)
-    return tc.check(x)
-
+isstring = lambda x: isinstance(x, str)
 issequence = lambda x: isinstance(x, collections.Sequence) and not isstring(x)
 
 class FixedSequenceChecker(Checker):
