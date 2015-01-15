@@ -32,7 +32,6 @@ import inspect
 import functools
 import re
 import collections
-import sys
 
 callable = lambda x: hasattr(x, "__call__")
 anything = lambda x: True
