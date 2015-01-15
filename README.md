@@ -137,7 +137,7 @@ Abstract base classes defined in the *collections* module are supported for duck
    ```Python
    import collections
    
-   def DuckTypedList(collections.Mapping):
+   def DuckTypedList(collections.MutableSequence):
       def __getitem__(self, item):
           pass
       def __iter__(self):
@@ -146,7 +146,7 @@ Abstract base classes defined in the *collections* module are supported for duck
           pass
           
    @typecheck
-   def foo(m: collections.Mapping):
+   def foo(m: collections.MutableSequence):
        pass
    ```
 
