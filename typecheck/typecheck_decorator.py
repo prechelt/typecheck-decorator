@@ -13,9 +13,8 @@ __all__ = [
 "typecheck", "typecheck_with_exceptions",
 
 # check predicates:
-"optional", "hasattrs", "has",
-"sequence_of", "tuple_of", "list_of", "dict_of",
-"enum", "any", "all", "none", "anything",
+"optional", "hasattrs", "has", "seq_of", "list_of",
+"dict_of", "enum", "any", "all", "none", "anything",
 
 # exceptions:
 "TypeCheckError", "InputParameterError", "ReturnValueError",
@@ -32,6 +31,7 @@ import builtins
 import inspect
 import functools
 import re
+import collections
 
 callable = lambda x: hasattr(x, "__call__")
 anything = lambda x: True
@@ -93,32 +93,6 @@ Checker.register(inspect.isclass, TypeChecker)
 
 ################################################################################
 
-issequence = lambda x: isinstance(x, tuple) or isinstance(x, list)
-
-class FixedSequenceChecker(Checker):
-
-    def __init__(self, the_sequence):
-        self._cls = type(the_sequence)
-        self._checks = tuple(Checker.create(x) for x in iter(the_sequence))
-
-    def check(self, values):
-        """specifying a plain tuple allows arguments that are tuples or lists;
-        specifying a specialized (subclassed) tuple allows only that type;
-        specifying a list allows only that list type."""
-        if not issequence(values):
-            return False
-        if self._cls == tuple or isinstance(values, self._cls):
-            if len(values) != len(self._checks):  return False
-            for thischeck, thisvalue in zip(self._checks, values):
-                if not thischeck(thisvalue): return False
-            return True
-        else:
-            return False
-
-Checker.register(issequence, FixedSequenceChecker)
-
-################################################################################
-
 class CallableChecker(Checker):
 
     def __init__(self, callable):
@@ -175,35 +149,54 @@ has = RegexChecker
 
 ################################################################################
 
+isstring = lambda x: isinstance(x, str)
+issequence = lambda x: isinstance(x, collections.Sequence) and not isstring(x)
+
+class FixedSequenceChecker(Checker):
+
+    def __init__(self, the_sequence):
+        self._cls = type(the_sequence)
+        self._checks = tuple(Checker.create(x) for x in iter(the_sequence))
+
+    def check(self, values):
+        """specifying a plain tuple allows arguments that are tuples or lists;
+        specifying a specialized (subclassed) tuple allows only that type;
+        specifying a list allows only that list type."""
+        if not isinstance(values, collections.Sequence):
+            return False
+        if self._cls == tuple or isinstance(values, self._cls):
+            if len(values) != len(self._checks):  return False
+            for thischeck, thisvalue in zip(self._checks, values):
+                if not thischeck(thisvalue): return False
+            return True
+        else:
+            return False
+
+Checker.register(issequence, FixedSequenceChecker)
+
+################################################################################
+
 class SequenceOfChecker(Checker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
-        self._allowable_types = (list, tuple)
 
     def check(self, value):
-        return builtins.any([isinstance(value, t) for t in self._allowable_types]) and \
+        return isinstance(value, collections.Sequence) and \
                functools.reduce(lambda r, v: r and self._check.check(v), value, True)
 
-sequence_of = SequenceOfChecker
+seq_of = SequenceOfChecker
 
 ################################################################################
 
-class TupleOfChecker(SequenceOfChecker):
+class ListOfChecker(Checker):
 
     def __init__(self, check):
         self._check = Checker.create(check)
-        self._allowable_types = (tuple,)
 
-tuple_of = TupleOfChecker
-
-################################################################################
-
-class ListOfChecker(SequenceOfChecker):
-
-    def __init__(self, check):
-        self._check = Checker.create(check)
-        self._allowable_types = (list,)
+    def check(self, value):
+        return isinstance(value, collections.MutableSequence) and \
+            functools.reduce(lambda r, v: r and self._check.check(v), value, True)
 
 list_of = ListOfChecker
 
@@ -216,7 +209,7 @@ class DictOfChecker(Checker):
         self._value_check = Checker.create(value_check)
 
     def check(self, value):
-        return isinstance(value, dict) and \
+        return isinstance(value, collections.Mapping) and \
                functools.reduce(lambda r, t: r and self._key_check.check(t[0]) and \
                                              self._value_check.check(t[1]),
                                 value.items(), True)

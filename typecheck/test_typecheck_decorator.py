@@ -6,6 +6,7 @@
 import functools
 import platform
 import re
+import collections
 from random import randint, shuffle
 from time import time
 from traceback import extract_stack
@@ -886,7 +887,7 @@ print("ok")
 print("FixedSequenceChecker: ", end="")
 
 @typecheck
-def foo(a: (int,str) = (1,"!"), *, k: tc.optional(()) = ()) -> (str, ()):
+def foo(a: (int, str)=(1, "!"), *, k: tc.optional(()) = ()) -> (str, ()):
     return a[1], k
 
 assert foo() == ("!", ())
@@ -1195,43 +1196,6 @@ print("ok")
 
 ############################################################################
 
-print("tuple_of: ", end="")
-
-@typecheck
-def foo(x: tc.tuple_of(int)) -> tc.tuple_of(float):
-    return tuple(map(float, x))
-
-assert foo(()) == ()
-assert foo((1, 2, 3)) == (1.0, 2.0, 3.0)
-
-with expected(InputParameterError("foo() has got an incompatible value for x: ('1.0',)")):
-    foo(("1.0",))
-
-with expected(InputParameterError("foo() has got an incompatible value for x: []")):
-    foo([])
-
-###################
-
-@typecheck
-def foo(x: tc.tuple_of([tc.has("^[01]+$"), int])) -> bool:
-    return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
-                            x, True)
-
-assert foo((["1010", 10], ["0101", 5]))
-assert not foo((["1010", 10], ["0111", 77]))
-
-###################
-
-assert tc.tuple_of(tc.optional(tc.has("^foo$")))(("foo", None, "foo")) and \
-       tc.tuple_of(tc.optional(tc.has("^foo$"))).check(("foo", None, "foo"))
-
-assert not tc.tuple_of(tc.optional(tc.has("^foo$")))(("123", None, "foo")) and \
-       not tc.tuple_of(tc.optional(tc.has("^foo$"))).check(("123", None, "foo"))
-
-print("ok")
-
-############################################################################
-
 print("list_of: ", end="")
 
 @typecheck
@@ -1269,10 +1233,10 @@ print("ok")
 
 ############################################################################
 
-print("sequence_of: ", end="")
+print("seq_of: ", end="")
 
 @typecheck
-def foo(x: tc.sequence_of(int)) -> tc.sequence_of(float):
+def foo(x: tc.seq_of(int)) -> tc.seq_of(float):
     return list(map(float, x))
 
 assert foo([]) == []
@@ -1285,7 +1249,7 @@ with expected(InputParameterError("foo() has got an incompatible value for x: ['
 ###################
 
 @typecheck
-def foo(x: tc.sequence_of((tc.has("^[01]+$"), int))) -> bool:
+def foo(x: tc.seq_of((tc.has("^[01]+$"), int))) -> bool:
     return functools.reduce(lambda r, e: r and int(e[0], 2) == e[1],
                             x, True)
 
@@ -1294,11 +1258,11 @@ assert not foo([("1010", 10), ("0111", 77)])
 
 ###################
 
-assert tc.sequence_of(tc.optional(tc.has("^foo$")))(["foo", None, "foo"]) and \
-       tc.sequence_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "foo"])
+assert tc.seq_of(tc.optional(tc.has("^foo$")))(["foo", None, "foo"]) and \
+       tc.seq_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "foo"])
 
-assert not tc.sequence_of(tc.optional(tc.has("^foo$")))(["123", None, "foo"]) and \
-       not tc.sequence_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "1234"])
+assert not tc.seq_of(tc.optional(tc.has("^foo$")))(["123", None, "foo"]) and \
+       not tc.seq_of(tc.optional(tc.has("^foo$"))).check(["foo", None, "1234"])
 
 print("ok")
 
