@@ -65,15 +65,13 @@ setup(
         # 3 - Alpha
         # 4 - Beta
         # 5 - Production/Stable
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Stable',
 
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Quality Assurance',
         'Topic :: Software Development :: Documentation',
 
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.1',
-        'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
     ],
