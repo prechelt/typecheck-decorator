@@ -13,7 +13,7 @@ __all__ = [
 # check predicate generators:
   "optional",
   "hasattrs", "re",
-  "seq_of", "map_of",
+  "seq_of", "list_of", "map_of",
   "range", "enum",
   "any", "all", "none",
 # check predicate generators:
@@ -26,7 +26,7 @@ __all__ = [
 ]
 
 import builtins
-import collections.abc
+import collections
 import inspect
 import functools
 import random
@@ -89,7 +89,7 @@ Checker.register(inspect.isclass, TypeChecker)
 
 
 def issequence(x):
-    return isinstance(x, collections.abc.Sequence)
+    return isinstance(x, collections.Sequence)
 
 class FixedSequenceChecker(Checker):
 
@@ -118,7 +118,7 @@ def isnamedtuple(x):
     return isinstance(x, tuple) and ismapping(x.__dict__)
 
 def ismapping(x):
-    return isinstance(x, collections.abc.Mapping)
+    return isinstance(x, collections.Mapping)
 
 class FixedMappingChecker(Checker):
 
@@ -186,16 +186,14 @@ class re(Checker):
                self._regex.search(value) is not None
 
 
-class seq_of(Checker):
+class sequence_of(Checker):
 
-    def __init__(self, check, checkonly=12):
+    def __init__(self, check, checkonly=4):
         self._check = Checker.create(check)
         self._checkonly = int(checkonly)
         assert self._checkonly >= 2
 
     def check(self, value):
-        if not isinstance(value, collections.abc.Sequence):
-            return False
         if len(value) == 0:
             return True
         elif len(value) == 1:
@@ -203,7 +201,7 @@ class seq_of(Checker):
         if len(value) <= self._checkonly:
             checkhere = builtins.range(len(value))
         else:
-            checkhere = random.sample(builtins.range(1,len(value)-1-1),
+            checkhere = random.sample(builtins.range(1,len(value)-1),
                                       self._checkonly-2)
             checkhere += [0, len(value)-1]  # always check first and last
         for idx in checkhere:
@@ -212,16 +210,29 @@ class seq_of(Checker):
         return True
 
 
+class seq_of(sequence_of):
+    def check(self, value):
+        return (isinstance(value, collections.Sequence) and
+                not isinstance(value, str) and 
+                super().check(value))
+
+
+class list_of(sequence_of):
+    def check(self, value):
+        return (isinstance(value, collections.MutableSequence) and
+                super().check(value))
+
+
 class map_of(Checker):
 
-    def __init__(self, key_check, value_check, checkonly=10):
+    def __init__(self, key_check, value_check, checkonly=4):
         self._key_check = Checker.create(key_check)
         self._value_check = Checker.create(value_check)
         self._checkonly = int(checkonly)
         assert self._checkonly >= 1
 
     def check(self, value):
-        if not isinstance(value, collections.abc.Mapping):
+        if not isinstance(value, collections.Mapping):
             return False
         count = 0
         for mykey, myvalue in value.items():

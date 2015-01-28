@@ -167,7 +167,7 @@ a predicate on the fly.
 
 The annotation is an expression that evaluates to a tuple or list
 (rather than a type or a predicate);
-more precisely, it can be any collections.abc.Sequence object.
+more precisely, it can be any collections.Sequence object.
 This is a very pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in sequence types.
@@ -206,8 +206,9 @@ General meaning:
   the annotation's i-th element.
 
 ``collections.namedtuple`` classes produce tuple objects, so you can pass
-named tuples as arguments for methods having Sequence annotations without problem.
-Never use a named tuple for an annotation, though, because its names
+named tuples as arguments for methods having Sequence annotations without 
+problem.
+Do not use a named tuple for an annotation, though, because its names
 will be ignored, which is confusing and error-prone.
 
 
@@ -216,7 +217,7 @@ will be ignored, which is confusing and error-prone.
 
 The annotation is an expression that evaluates to a dictionary
 (rather than a type or a predicate);
-more precisely, it can be any collections.abc.Mapping object.
+more precisely, it can be any collections.Mapping object.
 Again, this is a pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in types.
@@ -285,15 +286,15 @@ Allows all arguments that ``annot`` allows, plus ``None``:
 
    ```Python
    @tc.typecheck
-   def foo_o1(a:int):
-    pass
+   def foo(a:int):
+     pass
    @tc.typecheck
-   def foo_o2(a:tc.optional(int)):
-    pass
-   foo_o1(123)    # OK
-   foo_o2(123)    # OK
-   foo_o1(None)   # Wrong: None does not have type int
-   foo_o2(None)   # OK
+   def foo_opt(a:tc.optional(int)):
+     pass
+   foo(123)       # OK
+   foo_opt(123)   # OK
+   foo(None)      # Wrong: None does not have type int
+   foo_opt(None)  # OK
    ```
 
 **tc.hasattrs(*names)**:
@@ -316,7 +317,7 @@ Allows all arguments that possess every one of those attributes.
 
 **tc.re(regexp)**:
 
-Takes a string containing a regular expression string.
+Takes a string containing a regular expression.
 Allows all arguments that are strings and contain (as per ``re.search``)
 what is described by that regular expression.
 Also works for bytestrings if you use a bytestring regular expression.
@@ -330,16 +331,22 @@ Also works for bytestrings if you use a bytestring regular expression.
    foo("12AB")        # Wrong: argument OK, but result not allowed
    ```
 
-**tc.seq_of(annot, checkonly=12)**:
+**tc.seq_of(annot, checkonly=4)**:
 
 Takes any other annotation ``annot``.
 Allows any argument that is a sequence
-(tuple or list, in fact any ``collections.abc.Sequence``)
+(tuple or list, in fact any ``collections.Sequence``)
 in which each element is allowed by ``annot``.
 Not all violations will be detected because for efficiency reasons,
 the check will cover only a sample of ``checkonly`` elements of the sequence.
 This sample always includes the first and last element, the rest
 is a random sample.
+As an interesting special case, consider submitting a string to an 
+parameter declared as ``tc.seq_of(str)``. A string is a sequence.
+Its elements are strings. So the call should be considered OK.
+Since this is usually not what you want, ``tc.seq_of()`` will 
+always reject a string argument in order to avoid a confusing type
+of mistake.
 
    ```Python
    @tc.typecheck
@@ -354,13 +361,26 @@ is a random sample.
    almost_ok = 1000*["a"] + [666]
    foo_so(almost_ok)          # Wrong: inhomogeneous, will fail
    almost_ok += ["a"]
-   foo_so(almost_ok)          # Wrong, but will fail only 1% of the time
+   foo_so(almost_ok)          # Wrong, but will fail only 0.25% of the time
    ```
 
-**tc.map_of(keys_annot, values_annot, checkonly=10)**:
+**tc.list_of(annot, checkonly=4)**:
+
+Just like ``seq_of(annot, checkonly)``, except that it requires the
+sequence to be a ``collections.MutableSequence``.
+
+   ```Python
+   @tc.typecheck
+   def foo_lo(s: tc.list_of(str)):  pass
+
+   foo_so(["a", "b"])         # OK
+   foo_so(("a", "b"))         # Wrong: a tuple is not a MutableSequence
+   ```
+
+**tc.map_of(keys_annot, values_annot, checkonly=4)**:
 
 Takes two annotations ``keys_annot`` and ``values_annot``.
-Allows any argument that is a ``collections.abc.Mapping`` (typically a dict)
+Allows any argument that is a ``collections.Mapping`` (typically a dict)
 in which each key is allowed by keys_annot and
 each value is allowed by values_annot.
 Not all violations will be detected because for efficiency reasons,
@@ -391,8 +411,12 @@ Effectively defines an arbitrary, ad-hoc enumeration type.
    def foo_ev(arg: tc.enum(1, 2.0, "three", [1]*4)): pass
 
    foo_ev(1)     # OK
-   foo_ev(1.0)   # Wrong: not in values list
-   foo_ev([1,1,1,1])  # OK
+   foo_ev(2*1.0) # OK
+   foo_ev("thr"+2*"e")  # OK
+   foo_ev([1,1,1,1])    # OK
+   foo_ev(1.0)   # OK, because 1.0 == 1
+   foo_ev("thr") # Wrong: not in values list
+   foo_ev([1,1]) # Wrong: not in values list
    ```
 
 
@@ -400,7 +424,7 @@ Effectively defines an arbitrary, ad-hoc enumeration type.
 
 Takes two limit values low and high that must both have
 the same type (typically int or float). Will allow all arguments
-having that same type and lying between low and high.
+having that same type and lying between (including) low and high.
 The type needs not be numeric: any type supporting
 __le__ and __ge__ with range semantics will do.
 
@@ -590,7 +614,7 @@ Limitations
 
 1. The decorated function will have a different signature:
    Essentially, it is always ``(*args, **kwargs)``.
-   This will hopefully one day be changed by using the
+   This will perhaps one day be changed by using the
    ``decorator`` package or a similar technique.
 2. There should be a way to specify fixed dictionaries or named tuples
    like one can specify fixed lists or tuples.
@@ -624,15 +648,23 @@ Version history
     sure whether it will work on other platforms and with other Python versions
   Feedback is welcome!
 
-- **1.0**: ???
-  - removed list_of and tuple_of
-  - renamed sequence_of to seq_of and generalized it to collections.abc.Sequence
-  - renamed dict_of to map_of and generalized it to collections.abc.Mapping
+- **1.0**: 2015-01-28
+  - removed tuple_of
+  - renamed sequence_of to seq_of and generalized it to collections.Sequence
+  - added special case: a str will no longer be considered a seq_of(str)
+  - generalized list_of to collections.Sequence
+  - renamed dict_of to map_of and generalized it to collections.Mapping
   - renamed regexp matching from 'has' to 're'
-  - added checkonly limit to seq_of and map_of
+  - added checkonly limit to seq_of, list_of, and map_of
   - added Mapping annotations (analogous to Sequence annotations)
   - added range
   - provided the predicates with appropriate __name__ attributes
+
+Further contributors
+====================
+
+Benjamen Keroack <bkeroack@gmail.com> (PyPy test fixes, seq_of(str) hint)
+
 
 Similar packages
 ================

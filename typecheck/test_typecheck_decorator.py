@@ -871,13 +871,28 @@ def test_has6():
 
 def test_seq_of_simple():
     @tc.typecheck
-    def foo(x: tc.seq_of(int)) -> tc.seq_of(float):
+    def foo_s(x: tc.seq_of(int)) -> tc.seq_of(float):
         return list(map(float, x))
-    assert foo([]) == []
-    assert foo(()) == []
-    assert foo([1, 2, 3]) == [1.0, 2.0, 3.0]
-    with expected(InputParameterError("foo() has got an incompatible value for x: ['1.0']")):
-        foo(["1.0"])
+    assert foo_s([]) == []
+    assert foo_s(()) == []
+    assert foo_s([1, 2, 3]) == [1.0, 2.0, 3.0]
+    with expected(InputParameterError("foo_s() has got an incompatible value for x: ['1.0']")):
+        foo_s(["1.0"])
+    with expected(InputParameterError("foo_s() has got an incompatible value for x: 1")):
+        foo_s(1)
+
+def test_list_of_simple():
+    @tc.typecheck
+    def foo_l(x: tc.list_of(int)) -> tc.list_of(float):
+        return list(map(float, x))
+    assert foo_l([]) == []
+    with expected(InputParameterError("foo_l() has got an incompatible value for x: ()")):
+        foo_l(())
+    assert foo_l([1, 2, 3]) == [1.0, 2.0, 3.0]
+    with expected(InputParameterError("foo_l() has got an incompatible value for x: ['1.0']")):
+        foo_l(["1.0"])
+    with expected(InputParameterError("foo_l() has got an incompatible value for x: 1")):
+        foo_l(1)
 
 def test_seq_of_complex():
     @tc.typecheck
@@ -896,6 +911,9 @@ def test_seq_of_with_optional():
 def test_seq_of_UserList():
     assert tc.seq_of(int)([4, 5])
     assert tc.seq_of(int)(collections.UserList([4, 5]))
+
+def test_seq_of_str_with_simple_str():
+    assert not tc.seq_of(str)("A sequence of strings, but not a seq_of(str)")
 
 def test_seq_of_checkonly():
     almost_ints = list(range(1000)) + ["ha!"] + list(range(1001,2001))
@@ -1049,6 +1067,14 @@ def test_enum4():
         return x
     assert foo() == 2
 
+def test_enum5():
+   pred = tc.enum(1, 2.0, "three", [1]*4)
+   assert pred(2*1.0) 
+   assert pred("thr"+2*"e") 
+   assert pred([1,1,1,1]) 
+   assert pred(1.0) 
+   assert not pred("thr") 
+   assert not pred([1,1])
 
 def test_any1():
     @tc.typecheck
