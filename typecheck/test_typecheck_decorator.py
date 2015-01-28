@@ -163,11 +163,9 @@ def test_unchecked_args():
     assert axn_bxn(10, 20.0) == 30.0
     assert axn_bxn(10.0, 20) == 30.0
     assert axn_bxn(10.0, 20.0) == 30.0
-    with expected(TypeError, "(?:axn_bxn\(\) takes exactly 2 (?:positional )?arguments \(1 given\)|"
-                                "axn_bxn\(\) missing 1 required positional argument: 'b')"):
+    with expected(TypeError, "axn_bxn"):
         axn_bxn(10)
-    with expected(TypeError, "(?:axn_bxn\(\) takes exactly 2 (?:positional )?arguments \(0 given\)|"
-                                "axn_bxn\(\) missing 2 required positional arguments: 'a' and 'b')"):
+    with expected(TypeError, "axn_bxn"):
         axn_bxn()
 
 def test_default_unchecked_args1():
@@ -180,8 +178,7 @@ def test_default_unchecked_args1():
     assert axn_b2n(10.0, 20.0) == 30.0
     assert axn_b2n(10) == 12
     assert axn_b2n(10.0) == 12.0
-    with expected(TypeError, "(?:axn_b2n\(\) takes at least 1 (?:positional )?argument \(0 given\)|"
-                                "axn_b2n\(\) missing 1 required positional argument: 'a')"):
+    with expected(TypeError, "axn_b2n"):
         axn_b2n()
 
 def test_default_unchecked_args2():
@@ -207,11 +204,9 @@ def test_simple_checked_args1():
         axc_bxn(10.0, 20)
     with expected(InputParameterError("axc_bxn() has got an incompatible value for a: 10.0")):
         axc_bxn(10.0, 20.0)
-    with expected(TypeError, "(?:axc_bxn\(\) takes exactly 2 (?:positional )?arguments \(1 given\)|"
-                                "axc_bxn\(\) missing 1 required positional argument: 'b')"):
+    with expected(TypeError, "axc_bxn"):
         axc_bxn(10)
-    with expected(TypeError, "(?:axc_bxn\(\) takes exactly 2 (?:positional )?arguments \(0 given\)|"
-                                "axc_bxn\(\) missing 2 required positional arguments: 'a' and 'b')"):
+    with expected(TypeError, "axc_bxn"):
         axc_bxn()
 
 def test_simple_checked_args2():
@@ -224,11 +219,9 @@ def test_simple_checked_args2():
     assert axn_bxc(10.0, 20) == 30.0
     with expected(InputParameterError("axn_bxc() has got an incompatible value for b: 20.0")):
         axn_bxc(10.0, 20.0)
-    with expected(TypeError, "(?:axn_bxc\(\) takes exactly 2 (?:positional )?arguments \(1 given\)|"
-                                "axn_bxc\(\) missing 1 required positional argument: 'b')"):
+    with expected(TypeError, "axn_bxc"):
         axn_bxc(10)
-    with expected(TypeError, "(?:axn_bxc\(\) takes exactly 2 (?:positional )?arguments \(0 given\)|"
-                                "axn_bxc\(\) missing 2 required positional arguments: 'a' and 'b')"):
+    with expected(TypeError, "axn_bxc"):
         axn_bxc()
 
 def test_simple_default_checked_args1():
@@ -243,8 +236,7 @@ def test_simple_default_checked_args1():
         axn_b2c(10.0, 20.0)
     assert axn_b2c(10) == 12
     assert axn_b2c(10.0) == 12.0
-    with expected(TypeError, "(?:axn_b2c\(\) takes at least 1 (?:positional )?argument \(0 given\)|"
-                                "axn_b2c\(\) missing 1 required positional argument: 'a')"):
+    with expected(TypeError, "axn_b2c"):
         axn_b2c()
 
 def test_simple_default_checked_args2():
@@ -274,8 +266,7 @@ def test_simple_default_checked_args3():
     assert axc_b2n(10) == 12
     with expected(InputParameterError("axc_b2n() has got an incompatible value for a: 10.0")):
         axc_b2n(10.0)
-    with expected(TypeError, "(?:axc_b2n\(\) takes at least 1 (?:positional )?argument \(0 given\)|"
-                                "axc_b2n\(\) missing 1 required positional argument: 'a')"):
+    with expected(TypeError, "axc_b2n"):
         axc_b2n()
 
 def test_simple_default_checked_args4():
@@ -304,11 +295,9 @@ def test_simple_checked_args3():
         axc_bxc(10.0, 20)
     with expected(InputParameterError("axc_bxc() has got an incompatible value for a: 10.0")):
         axc_bxc(10.0, 20.0)
-    with expected(TypeError, "(?:axc_bxc\(\) takes exactly 2 (?:positional )?arguments \(1 given\)|"
-                                "axc_bxc\(\) missing 1 required positional argument: 'b')"):
+    with expected(TypeError, "axc_bxc"):
         axc_bxc(10)
-    with expected(TypeError, "(?:axc_bxc\(\) takes exactly 2 (?:positional )?arguments \(0 given\)|"
-                                "axc_bxc\(\) missing 2 required positional arguments: 'a' and 'b')"):
+    with expected(TypeError, "axc_bxc"):
         axc_bxc()
 
 def test_simple_default_checked_args5():
@@ -325,8 +314,7 @@ def test_simple_default_checked_args5():
     assert axc_b2c(10) == 12
     with expected(InputParameterError("axc_b2c() has got an incompatible value for a: 10.0")):
         axc_b2c(10.0)
-    with expected(TypeError, "(?:axc_b2c\(\) takes at least 1 (?:positional )?argument \(0 given\)|"
-                                "axc_b2c\(\) missing 1 required positional argument: 'a')"):
+    with expected(TypeError, "axc_b2c"):
         axc_b2c()
 
 def test_simple_default_checked_args6():
@@ -413,14 +401,11 @@ def test_default_vs_checked_kwargs3():
     assert pxn_qxn(p = 1, q = 2.0) == 3.0
     assert pxn_qxn(p = 1.0, q = 2) == 3.0
     assert pxn_qxn(p = 1.0, q = 2.0) == 3.0
-    with expected(TypeError, "(?:pxn_qxn\(\) needs keyword-only argument q|"
-                                "pxn_qxn\(\) missing 1 required keyword-only argument: 'q')"):
+    with expected(TypeError, "pxn_qxn"):
         pxn_qxn(p = 1)
-    with expected(TypeError, "(?:pxn_qxn\(\) needs keyword-only argument p|"
-                                "pxn_qxn\(\) missing 1 required keyword-only argument: 'p')"):
+    with expected(TypeError, "pxn_qxn"):
         pxn_qxn(q = 2)
-    with expected(TypeError, "(?:pxn_qxn\(\) needs keyword-only argument p|"
-                                "pxn_qxn\(\) missing 2 required keyword-only arguments: 'p' and 'q')"):
+    with expected(TypeError, "pxn_qxn"):
         pxn_qxn()
 
 def test_default_vs_checked_kwargs4():
@@ -432,11 +417,9 @@ def test_default_vs_checked_kwargs4():
     assert pxn_q2n(p = 1.0, q = 2) == 3.0
     assert pxn_q2n(p = 1.0, q = 2.0) == 3.0
     assert pxn_q2n(p = 1) == 3
-    with expected(TypeError, "(?:pxn_q2n\(\) needs keyword-only argument p|"
-                                "pxn_q2n\(\) missing 1 required keyword-only argument: 'p')"):
+    with expected(TypeError, "pxn_q2n"):
         pxn_q2n(q = 2)
-    with expected(TypeError, "(?:pxn_q2n\(\) needs keyword-only argument p|"
-                                "pxn_q2n\(\) missing 1 required keyword-only argument: 'p')"):
+    with expected(TypeError, "pxn_q2n"):
         pxn_q2n()
 
 def test_default_vs_checked_kwargs5():
@@ -463,8 +446,7 @@ def test_default_vs_checked_kwargs6():
         pxn_qxc(p = 1.0, q = 2.0)
     with expected(InputParameterError("pxn_qxc() has got an incompatible value for q: <no value>")):
         pxn_qxc(p = 1)
-    with expected(TypeError, "(?:pxn_qxc\(\) needs keyword-only argument p|"
-                                "pxn_qxc\(\) missing 1 required keyword-only argument: 'p')"):
+    with expected(TypeError, "pxn_qxc"):
         pxn_qxc(q = 2)
     with expected(InputParameterError("pxn_qxc() has got an incompatible value for q: <no value>")):
         pxn_qxc()
@@ -481,8 +463,7 @@ def test_default_vs_checked_kwargs7():
         pxn_q2c(p = 1.0, q = 2.0)
     with expected(InputParameterError("pxn_q2c() has got an incompatible value for q: <no value>")):
         pxn_q2c(p = 1)
-    with expected(TypeError, "(?:pxn_q2c\(\) needs keyword-only argument p|"
-                                "pxn_q2c\(\) missing 1 required keyword-only argument: 'p')"):
+    with expected(TypeError, "pxn_q2c"):
         pxn_q2c(q = 2)
     with expected(InputParameterError("pxn_q2c() has got an incompatible value for q: <no value>")):
         pxn_q2c()
