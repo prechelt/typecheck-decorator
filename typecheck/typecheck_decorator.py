@@ -77,6 +77,20 @@ class Checker:
 
 ################################################################################
 
+isnone = lambda x: x is None
+
+class NoneChecker(Checker):
+
+    def __init__(self, cls):
+        self._cls = cls
+
+    def check(self, value):
+        return value is None
+
+Checker.register(isnone, NoneChecker)
+
+################################################################################
+
 class TypeChecker(Checker):
 
     def __init__(self, cls):
@@ -356,14 +370,14 @@ def typecheck(method, *, input_parameter_error = InputParameterError,
             if check is not None:
                 arg_name, checker = check
                 if not checker.check(arg):
-                    raise input_parameter_error("{0}() has got an incompatible value "
+                    raise input_parameter_error("{0}() has an incompatible value "
                                                 "for {1}: {2}".format(method_name, arg_name,
                                                                       str(arg) == "" and "''" or arg))
 
         for arg_name, checker in kwarg_checkers.items():
             kwarg = kwargs.get(arg_name, Checker.no_value)
             if not checker.check(kwarg):
-                raise input_parameter_error("{0}() has got an incompatible value "
+                raise input_parameter_error("{0}() has an incompatible value "
                                             "for {1}: {2}".format(method_name, arg_name,
                                                                   str(kwarg) == "" and "''" or kwarg))
 
