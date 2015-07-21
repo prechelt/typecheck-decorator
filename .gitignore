@@ -1,39 +1,34 @@
-*.py[cod]
-
-# C extensions
-*.so
-
-# Packages
+#----- file types
+*~
 *.egg
 *.egg-info
-dist
-build
-eggs
-parts
+*.mo
+*.py[cod]
+*.so
+
+
+#----- Directories
+.cache
+.idea/*
+__pycache__
 bin
-var
-sdist
+build
 develop-eggs
-.installed.cfg
+dist
+eggs
 lib
 lib64
-__pycache__
+parts
+sdist
+var
 
-# Installer logs
-pip-log.txt
-
-# Unit test / coverage reports
+#----- files
 .coverage
-.tox
-nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
+.installed.cfg
 .mr.developer.cfg
 .project
 .pydevproject
+.tox
+nosetests.xml
+pip-log.txt
 
-# PyCharm/IDEA
-.idea/*

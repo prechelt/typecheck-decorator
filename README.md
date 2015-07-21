@@ -167,7 +167,7 @@ a predicate on the fly.
 
 The annotation is an expression that evaluates to a tuple or list
 (rather than a type or a predicate);
-more precisely, it can be any collections.Sequence object.
+more precisely, it can be any ``collections.Sequence`` object.
 This is a very pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in sequence types.
@@ -195,15 +195,15 @@ It is easiest explained by examples:
 General meaning:
 - The annotation is a sequence of length N.
   Its entries could themselves each serve as an annotation.
-- If it is a list, the argument must be a list (or list subclass) object.
+- The annotation will match only an argument of exactly length N.
+- The argument's i-th element must fulfil the condition implied by
+  the annotation's i-th element.
+- If the annotation is a list, the argument must be a list (or list subclass) object.
 - If it is a tuple, the argument can be a tuple, tuple subclass object,
   list, or list subclass object.
 - If it is a subclass S of list or tuple, the same rules apply,
   except only S and its subclasses are acceptable and
   the plain-tuple-can-be-list special case does no longer apply.
-- The annotation will match only an argument of exactly length N.
-- The argument's i-th element must fulfil the condition implied by
-  the annotation's i-th element.
 
 ``collections.namedtuple`` classes produce tuple objects, so you can pass
 named tuples as arguments for methods having Sequence annotations without 
@@ -217,7 +217,7 @@ will be ignored, which is confusing and error-prone.
 
 The annotation is an expression that evaluates to a dictionary
 (rather than a type or a predicate);
-more precisely, it can be any collections.Mapping object.
+more precisely, it can be any ``collections.Mapping`` object.
 Again, this is a pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in types.
@@ -659,6 +659,10 @@ Version history
   - added Mapping annotations (analogous to Sequence annotations)
   - added range
   - provided the predicates with appropriate __name__ attributes
+  
+- **1.1**: (forthcoming)
+  - various small improvements to the documentation
+
 
 Further contributors
 ====================
