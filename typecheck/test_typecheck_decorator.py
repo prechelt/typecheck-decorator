@@ -1222,4 +1222,9 @@ def test_disable():
     bar("1")
 
 
-# EOF
+if __name__ == '__main__':
+    import sys
+    import pytest
+    myself = sys.argv[0]
+    print("Testing", myself)
+    sys.exit(pytest.main(myself))

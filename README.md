@@ -337,7 +337,7 @@ Takes any other annotation ``annot``.
 Allows any argument that is a sequence
 (tuple or list, in fact any ``collections.Sequence``)
 in which each element is allowed by ``annot``.
-Not all violations will be detected because for efficiency reasons,
+Not all violations will be detected because, for efficiency reasons,
 the check will cover only a sample of ``checkonly`` elements of the sequence.
 This sample always includes the first and last element, the rest
 is a random sample.
