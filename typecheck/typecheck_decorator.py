@@ -360,6 +360,17 @@ def typecheck(method, *, input_parameter_error = InputParameterError,
                                                 "for {1}: {2}".format(method_name, arg_name,
                                                                       str(arg) == "" and "''" or arg))
 
+        # Validate named parameters
+        for check in arg_checkers:
+            if check is not None:
+                arg_name, checker = check
+                kwarg = kwargs.get(arg_name, Checker.no_value)
+                if kwarg != Checker.no_value:
+                    if not checker.check(kwarg):
+                        raise input_parameter_error("{0}() has got an incompatible value "
+                                                    "for {1}: {2}".format(method_name, arg_name,
+                                                                          str(kwarg) == "" and "''" or kwarg))
+
         for arg_name, checker in kwarg_checkers.items():
             kwarg = kwargs.get(arg_name, Checker.no_value)
             if not checker.check(kwarg):

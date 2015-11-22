@@ -1211,20 +1211,47 @@ def test_disable():
     @tc.typecheck
     def foo(x: int):
         pass
-    tc.disable() # disable-only switch, no further proxying is performed
+
+    tc.disable()  # disable-only switch, no further proxying is performed
+
     @tc.typecheck
     def bar(x: int):
         pass
+
     foo(1)
     with expected(InputParameterError("foo() has got an incompatible value for x: 1")):
         foo("1")
     bar(1)
     bar("1")
 
+############################################################################
 
-if __name__ == '__main__':
-    import sys
-    import pytest
-    myself = sys.argv[0]
-    print("Testing", myself)
-    sys.exit(pytest.main(myself))
+def test_named_arguments():
+    @tc.typecheck
+    def func(a: int):
+        return a
+
+    # test named arguments when value matches expected type
+    assert func(5) == 5
+    assert func(a=10) == 10
+
+    # test named arguments when value doesn't match expected type
+    with expected(InputParameterError("func() has got an incompatible value for a: 1")):
+        func(a='1')
+
+
+def test_named_arguments2():
+    @tc.typecheck
+    def func(a: int=5):
+        return a
+
+    # test named arguments when value matches expected type
+    assert func() == 5
+    assert func(10) == 10
+    assert func(a=15) == 15
+
+    # test named arguments when value doesn't match expected type
+    with expected(InputParameterError("func() has got an incompatible value for a: 1")):
+        func(a='1')
+
+# EOF
