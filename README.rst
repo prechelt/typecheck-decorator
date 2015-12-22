@@ -57,6 +57,7 @@ Other kinds of annotations:
 - ``tc.map_of(str, tc.list_of(Person))`` describes dictionaries where all
   keys are strings and all values are homogeneous lists of Persons,
 - and so on.
+- Will soon be extended to work with Python 3.5 style 'typing' annotations, too.
 
 Find the documentation at
 https://github.com/prechelt/typecheck-decorator

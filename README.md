@@ -55,7 +55,7 @@ For clarity, the recommended import style is as follows:
   ```
 
 The remainder of this document will assume this import style.
-(Beware of importing * , as there are functions any() and all() 
+(Beware of ``import *`` , as there are functions any() and all() 
 that are likely to break your code then.)
 
 As for usage style, the idea of this package is not to approximate
@@ -660,14 +660,19 @@ Version history
   - added range
   - provided the predicates with appropriate __name__ attributes
   
-- **1.1**: (forthcoming)
+- **1.1**:
   - various small improvements to the documentation
+
+- **1.2**:
+  - FIX: added checking for non-kwonlyargs named arguments
+  - cut the implementation and tests into several pieces
 
 
 Further contributors
 ====================
 
-Benjamen Keroack <bkeroack@gmail.com> (PyPy test fixes, seq_of(str) hint)
+Benjamen Keroack <bkeroack@gmail.com> (v1.1: PyPy test fixes, seq_of(str) hint)
+Andres Osorio <cosoriog@gmail.com> (v1.2: keyword args checking fix)
 
 
 Similar packages
@@ -680,6 +685,7 @@ Similar packages
 - ``gradual`` has a similar overall approach of using a decorator and annotations.
   Compared to gradual, typecheck-decorator uses a more pragmatic approach and
   is far more flexible in expressing types.
+  gradual as of 2015-12 has status "pre-alpha".
 - ``threecheck`` is similar to typecheck-decorator in
   approach and expressiveness.
 
@@ -689,3 +695,4 @@ TO DO
 
 - use decorator package?
 - add more specialized exception messages, e.g. for sequences and dicts
+- support the Python 3.5 'typing' module
