@@ -231,23 +231,27 @@ def test_hasattrs1():
 
 
 def test_hasattrs2():
-    assert tc.hasattrs("__class__")(int) and tc.hasattrs("__class__").check(int)
-    assert not tc.hasattrs("foo")(int) and not tc.hasattrs("foo").check(int)
+    namespace = None
+    assert tc.hasattrs("__class__")(int, namespace)
+    assert tc.hasattrs("__class__").check(int, namespace)
+    assert not tc.hasattrs("foo")(int, namespace)
+    assert not tc.hasattrs("foo").check(int, namespace)
 
 
 def test_has1():
-    assert tc.re("^abc$")("abc")
-    assert not tc.re("^abc$")(b"abc")
-    assert not tc.re(b"^abc$")("abc")
-    assert tc.re(b"^abc$")(b"abc")
-    assert tc.re(b"^foo\x00bar$")(b"foo\x00bar")
-    assert not tc.re(b"^foo\x00bar$")(b"foo\x00baz")
-    assert tc.re("^abc")("abc\n")
-    assert tc.re(b"^abc")(b"abc\n")
-    assert not tc.re("^abc$")("abc\n")
-    assert not tc.re(b"^abc$")(b"abc\n")
-    assert not tc.re("^abc$")("abcx")
-    assert not tc.re(b"^abc$")(b"abcx")
+    namespace = None
+    assert tc.re("^abc$")("abc", namespace)
+    assert not tc.re("^abc$")(b"abc", namespace)
+    assert not tc.re(b"^abc$")("abc", namespace)
+    assert tc.re(b"^abc$")(b"abc", namespace)
+    assert tc.re(b"^foo\x00bar$")(b"foo\x00bar", namespace)
+    assert not tc.re(b"^foo\x00bar$")(b"foo\x00baz", namespace)
+    assert tc.re("^abc")("abc\n", namespace)
+    assert tc.re(b"^abc")(b"abc\n", namespace)
+    assert not tc.re("^abc$")("abc\n", namespace)
+    assert not tc.re(b"^abc$")(b"abc\n", namespace)
+    assert not tc.re("^abc$")("abcx", namespace)
+    assert not tc.re(b"^abc$")(b"abcx", namespace)
 
 
 def test_has2():
@@ -308,8 +312,11 @@ def test_has5():
 
 
 def test_has6():
-    assert tc.re("^123$")("123") and tc.re("^123$").check("123")
-    assert not tc.re("^123$")("foo") and not tc.re("^123$").check("foo")
+    namespace = None
+    assert tc.re("^123$")("123", namespace)
+    assert tc.re("^123$").check("123", namespace)
+    assert not tc.re("^123$")("foo", namespace)
+    assert not tc.re("^123$").check("foo", namespace)
 
 
 def test_seq_of_simple():
@@ -352,31 +359,34 @@ def test_seq_of_complex():
 
 
 def test_seq_of_with_optional():
-    assert tc.seq_of(tc.optional(tc.re("^foo$")))(["foo", None, "foo"]) and \
-           tc.seq_of(tc.optional(tc.re("^foo$"))).check(["foo", None, "foo"])
-    assert not tc.seq_of(tc.optional(tc.re("^foo$")))(["123", None, "foo"]) and \
-           not tc.seq_of(tc.optional(tc.re("^foo$"))).check(["foo", None, "1234"])
+    namespace = None
+    assert tc.seq_of(tc.optional(tc.re("^foo$")))(["foo", None, "foo"], namespace) and \
+           tc.seq_of(tc.optional(tc.re("^foo$"))).check(["foo", None, "foo"], namespace)
+    assert not tc.seq_of(tc.optional(tc.re("^foo$")))(["123", None, "foo"], namespace) and \
+           not tc.seq_of(tc.optional(tc.re("^foo$"))).check(["foo", None, "1234"], namespace)
 
 
 def test_seq_of_UserList():
-    assert tc.seq_of(int)([4, 5])
-    assert tc.seq_of(int)(collections.UserList([4, 5]))
+    namespace = None
+    assert tc.seq_of(int)([4, 5], namespace)
+    assert tc.seq_of(int)(collections.UserList([4, 5]), namespace)
 
 
 def test_seq_of_str_with_simple_str():
-    assert not tc.seq_of(str)("A sequence of strings, but not a seq_of(str)")
+    assert not tc.seq_of(str)("A sequence of strings, but not a seq_of(str)", None)
 
 
 def test_seq_of_checkonly():
+    namespace = None
     almost_ints = list(range(1000)) + ["ha!"] + list(range(1001, 2001))
-    non_gotchas = (tc.seq_of(int, checkonly=9)(almost_ints) +
-                   tc.seq_of(int, checkonly=10)(almost_ints) +
-                   tc.seq_of(int, checkonly=11)(almost_ints))
+    non_gotchas = (tc.seq_of(int, checkonly=9)(almost_ints, namespace) +
+                   tc.seq_of(int, checkonly=10)(almost_ints, namespace) +
+                   tc.seq_of(int, checkonly=11)(almost_ints, namespace))
     assert non_gotchas >= 2  # should fail about once every 40000 runs
     almost_ints = list(range(1000)) + 10 * ["ha!"] + list(range(1010, 2001))
-    non_gotchas = (tc.seq_of(str, checkonly=8)(almost_ints) +
-                   tc.seq_of(str, checkonly=9)(almost_ints) +
-                   tc.seq_of(str, checkonly=10)(almost_ints))
+    non_gotchas = (tc.seq_of(str, checkonly=8)(almost_ints, namespace) +
+                   tc.seq_of(str, checkonly=9)(almost_ints, namespace) +
+                   tc.seq_of(str, checkonly=10)(almost_ints, namespace))
     assert non_gotchas <= 1  # should fail almost never
 
 
@@ -417,14 +427,14 @@ def test_map_of_complex():
 
 
 def test_map_of_with_optional():
-    assert tc.map_of(int, tc.optional(str))({1: "foo", 2: None}) and \
-           tc.map_of(int, tc.optional(str)).check({1: "foo", 2: None})
-    assert not tc.map_of(int, tc.optional(str))({None: "foo", 2: None}) and \
-           not tc.map_of(int, tc.optional(str)).check({None: "foo", 2: None})
+    assert tc.map_of(int, tc.optional(str))({1: "foo", 2: None}, None) and \
+           tc.map_of(int, tc.optional(str)).check({1: "foo", 2: None}, None)
+    assert not tc.map_of(int, tc.optional(str))({None: "foo", 2: None}, None) and \
+           not tc.map_of(int, tc.optional(str)).check({None: "foo", 2: None}, None)
 
 
 def test_map_of_OrderedDict():
-    assert tc.map_of(int, str)(collections.OrderedDict())
+    assert tc.map_of(int, str)(collections.OrderedDict(), None)
 
 
 def test_map_of_checkonly():
@@ -441,7 +451,7 @@ def test_map_of_checkonly():
         numbers = random.sample(range(1000000), 8)  # are variable and all different
         for k in range(4):
             mydict[probably_int(numbers.pop())] = probably_str(numbers.pop())
-        correct += tc.map_of(int, str, checkonly=2)(mydict)
+        correct += tc.map_of(int, str, checkonly=2)(mydict, None)
     assert correct > 0 and correct < 20  # should fail once about every 500000 runs
 
 
@@ -547,13 +557,14 @@ def test_enum4():
 
 
 def test_enum5():
+    namespace = None
     pred = tc.enum(1, 2.0, "three", [1] * 4)
-    assert pred(2 * 1.0)
-    assert pred("thr" + 2 * "e")
-    assert pred([1, 1, 1, 1])
-    assert pred(1.0)
-    assert not pred("thr")
-    assert not pred([1, 1])
+    assert pred(2 * 1.0, namespace)
+    assert pred("thr" + 2 * "e", namespace)
+    assert pred([1, 1, 1, 1], namespace)
+    assert pred(1.0, namespace)
+    assert not pred("thr", namespace)
+    assert not pred([1, 1], namespace)
 
 
 def test_any1():

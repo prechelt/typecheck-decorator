@@ -64,8 +64,8 @@ class Checker:
         else:
             return None
 
-    def __call__(self, value):
-        return self.check(value)
+    def __call__(self, value, namespace):
+        return self.check(value, namespace)
 
 
 ################################################################################
@@ -74,7 +74,7 @@ class TypeChecker(Checker):
     def __init__(self, cls):
         self._cls = cls
 
-    def check(self, value):
+    def check(self, value, namespace):
         return isinstance(value, self._cls)
 
 # Note: 'typing'-module checkers must register _before_ this one:
@@ -86,5 +86,7 @@ class optional(Checker):
     def __init__(self, check):
         self._check = Checker.create(check)
 
-    def check(self, value):
-        return value is Checker.no_value or value is None or self._check.check(value)
+    def check(self, value, namespace):
+        return (value is Checker.no_value or
+                value is None or
+                self._check.check(value, namespace))

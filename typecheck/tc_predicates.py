@@ -15,7 +15,7 @@ class FixedSequenceChecker(fw.Checker):
         self._cls = type(the_sequence)
         self._checks = tuple(fw.Checker.create(x) for x in iter(the_sequence))
 
-    def check(self, values):
+    def check(self, values, namespace):
         """specifying a plain tuple allows arguments that are tuples or lists;
         specifying a specialized (subclassed) tuple allows only that type;
         specifying a list allows only that list type."""
@@ -24,7 +24,7 @@ class FixedSequenceChecker(fw.Checker):
         if self._cls == tuple or isinstance(values, self._cls):
             if len(values) != len(self._checks):  return False
             for thischeck, thisvalue in zip(self._checks, values):
-                if not thischeck(thisvalue): return False
+                if not thischeck(thisvalue, namespace): return False
             return True
         else:
             return False
@@ -46,14 +46,14 @@ class FixedMappingChecker(fw.Checker):
         self._checks = {key: fw.Checker.create(val)
                         for key, val in the_mapping.items()}
 
-    def check(self, themap):
+    def check(self, themap, namespace):
         if isnamedtuple(themap):
             themap = vars(themap)
             assert ismapping(themap)
         if not ismapping(themap) or len(themap) != len(self._checks):
             return False
         for key, value in themap.items():
-            if not key in self._checks or not self._checks[key](value):
+            if not key in self._checks or not self._checks[key](value, namespace):
                 return False
         return True
 
@@ -65,7 +65,7 @@ class CallableChecker(fw.Checker):
     def __init__(self, callable):
         self._callable = callable
 
-    def check(self, value):
+    def check(self, value, namespace):
         return bool(self._callable(value))
 
 
@@ -80,7 +80,7 @@ class hasattrs(fw.Checker):
         self._attrs = attrs
         assert all([type(a) == str for a in attrs])
 
-    def check(self, value):
+    def check(self, value, namespace):
         return builtins.all([hasattr(value, attr) for attr in self._attrs])
 
 
@@ -95,7 +95,7 @@ class re(fw.Checker):
         self._regex_eol = regex[-1:] == self._regex_eols.get(self._regex_t)
         self._value_eol = self._value_eols[self._regex_t]
 
-    def check(self, value):
+    def check(self, value, namespace):
         return type(value) is self._regex_t and \
                (not self._regex_eol or not value.endswith(self._value_eol)) and \
                self._regex.search(value) is not None
@@ -107,11 +107,11 @@ class sequence_of(fw.Checker):
         self._checkonly = int(checkonly)
         assert self._checkonly >= 2
 
-    def check(self, value):
+    def check(self, value, namespace):
         if len(value) == 0:
             return True
         elif len(value) == 1:
-            return self._check.check(value[0])
+            return self._check.check(value[0], namespace)
         if len(value) <= self._checkonly:
             checkhere = builtins.range(len(value))
         else:
@@ -119,22 +119,22 @@ class sequence_of(fw.Checker):
                                       self._checkonly - 2)  # w/o replacement
             checkhere += [0, len(value) - 1]  # always check first and last
         for idx in checkhere:
-            if not self._check.check(value[idx]):
+            if not self._check.check(value[idx], namespace):
                 return False
         return True
 
 
 class seq_of(sequence_of):
-    def check(self, value):
+    def check(self, value, namespace):
         return (isinstance(value, collections.Sequence) and
                 not isinstance(value, str) and
-                super().check(value))
+                super().check(value, namespace))
 
 
 class list_of(sequence_of):
-    def check(self, value):
+    def check(self, value, namespace):
         return (isinstance(value, collections.MutableSequence) and
-                super().check(value))
+                super().check(value, namespace))
 
 
 class map_of(fw.Checker):
@@ -144,13 +144,13 @@ class map_of(fw.Checker):
         self._checkonly = int(checkonly)
         assert self._checkonly >= 1
 
-    def check(self, value):
+    def check(self, value, namespace):
         if not isinstance(value, collections.Mapping):
             return False
         count = 0
         for mykey, myvalue in value.items():
-            if not self._key_check.check(mykey) or \
-                    not self._value_check.check(myvalue):
+            if (not self._key_check.check(mykey, namespace) or
+                    not self._value_check.check(myvalue, namespace)):
                 return False
             count += 1
             if count == self._checkonly:
@@ -169,7 +169,7 @@ class range(fw.Checker):
         # And even object() has these attributes. So expect failures.
         assert low < high
 
-    def check(self, value):
+    def check(self, value, namespace):
         return (type(value) == self._rangetype and
                 value >= self._low and value <= self._high)
 
@@ -178,7 +178,7 @@ class enum(fw.Checker):
     def __init__(self, *values):
         self._values = values
 
-    def check(self, value):
+    def check(self, value, namespace):
         return value in self._values
 
 
@@ -186,9 +186,9 @@ class any(fw.Checker):
     def __init__(self, *args):
         self._checks = tuple(fw.Checker.create(arg) for arg in args)
 
-    def check(self, value):
+    def check(self, value, namespace):
         for c in self._checks:
-            if c.check(value):
+            if c.check(value, namespace):
                 return True
         else:
             return False
@@ -198,9 +198,9 @@ class all(fw.Checker):
     def __init__(self, *args):
         self._checks = tuple(fw.Checker.create(arg) for arg in args)
 
-    def check(self, value):
+    def check(self, value, namespace):
         for c in self._checks:
-            if not c.check(value):
+            if not c.check(value, namespace):
                 return False
         else:
             return True
@@ -210,9 +210,9 @@ class none(fw.Checker):
     def __init__(self, *args):
         self._checks = tuple(fw.Checker.create(arg) for arg in args)
 
-    def check(self, value):
+    def check(self, value, namespace):
         for c in self._checks:
-            if c.check(value):
+            if c.check(value, namespace):
                 return False
         else:
             return True

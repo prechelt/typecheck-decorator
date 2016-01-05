@@ -22,7 +22,7 @@ class GenericMetaChecker(fw.Checker):
     def __init__(self, tg_class):
         self._cls = tg_class
 
-    def check(self, value):
+    def check(self, value, namespace):
         if not isinstance(value, self._cls):
             return False
         metaclass = type(self._cls)
@@ -31,26 +31,26 @@ class GenericMetaChecker(fw.Checker):
         # now check checkable relevant properties of all
         # relevant Generic subclasses from the typing module:
         if isinstance(value, tg.Sequence):
-            return self._check_sequence(value, params)
+            return self._check_sequence(value, params, namespace)
         elif (isinstance(value, (tg.Mapping, tg.MappingView))):
-            return self._check_mapping(value, params)  # TODO: OK for all MappingViews?
+            return self._check_mapping(value, params, namespace)  # TODO: OK for all MappingViews?
         elif isinstance(value, tg.AbstractSet):
-            return self._check_by_iterator(value, params)
+            return self._check_by_iterator(value, params, namespace)
         # tg.Iterable: nothing is checkable, see tg.Iterator
         # tg.Iterator: nothing is checkable: must not read, might be a generator
         # tg.Container: nothing is checkable: would need to guess elements
         else:
             return True
 
-    def _check_by_iterator(self, value, contenttypes):
+    def _check_by_iterator(self, value, contenttypes, namespace):
         assert False  # TODO: implement _check_by_iterator
 
-    def _check_mapping(self, value, contenttypes):
+    def _check_mapping(self, value, contenttypes, namespace):
         assert False  # TODO: implement _check_mapping
 
-    def _check_sequence(self, value, contenttypes):
+    def _check_sequence(self, value, contenttypes, namespace):
         assert len(contenttypes) == 1
-        return tcp.sequence_of(contenttypes[0]).check(value)
+        return tcp.sequence_of(contenttypes[0]).check(value, namespace)
 
 fw.Checker.register(_is_GenericMeta_class, GenericMetaChecker, prepend=True)
 
