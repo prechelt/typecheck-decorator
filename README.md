@@ -92,7 +92,7 @@ The original function will be called then and its result
 checked likewise if a result annotation had been provided.
 
 
-4 The four sorts of annotation
+4 The five sorts of annotation
 ==============================
 
 ``@tc.typecheck`` allows four different kinds of annotation to
@@ -103,14 +103,19 @@ some parameter PAR:
 - **Predicates.** The annotation is a function that turns the argument
   into True (for an acceptable argument)
   or False (for all others).
-  Note that a predicate is a function, not a function call -- but it may
-  be the result of a function call.
+  (Remember that a predicate is a function, not a function call -- but it may
+  be the result of a function call.)
 - **Tuples** and **Lists.**
   The annotation is a tuple or list (rather than a type or a predicate)
   as explained below.
 - **Dictionaries.**
   The annotation is a dictionary (rather than a type or a predicate)
   as explained below.
+- **``typing`` annotations.**
+  The annotation is one of those defined in the module ``typing``.
+  (This module was introduced in Python 3.5 and is available from 
+   PyPI for earlier Python 3 versions.)
+
 The following subsections explain each of them.
 The same annotations are valid for function results (as opposed to parameters)
 as well.
@@ -250,6 +255,39 @@ If you want to annotate the use of named tuples, use something like
 ``tc.all(MyNT, dict(x=int, y=int))`` (as explained below) or
 ``MyNT(x=int, y=int).__dict__`` (which is a dictionary but shows the intent
 of passing MyNTs as arguments).
+
+
+4.5 ``typing`` annotations
+--------------------------
+
+After the typecheck-decorator package existed for a while,
+Python 3.5 standardized a notation for type annotations via the
+new module ``typing``.
+That notation is supported here as well.
+
+If you only use typecheck-decorator, you can freely mix these new
+notation with the older notations described above.
+If you also want to apply other tools with your typechecking annotations
+(e.g. tools for static typechecking),
+you should restrict yourself to the notations described in Sections 4.1 and 4.5
+only.
+
+Examples:
+
+   ```Python
+   import typing as tg
+   @tc.typecheck
+   def foo7(point:dict(x=int,y=int)): #!!!
+     pass
+   foo7(dict(x=1, y=2))         # OK
+   foo7({"x":1, "y":2})         # OK
+
+   ```
+
+So far, the implementation of this support is incomplete.
+Only the following annotations are supported yet:
+!!!
+So far, type variables are not checked.
 
 
 5 Predicate generators
