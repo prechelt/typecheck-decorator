@@ -1,5 +1,6 @@
 
 import inspect
+import typing as tg
 
 ################################################################################
 
@@ -39,16 +40,27 @@ class Checker:
     _registered = []
 
     @classmethod
-    def register(cls, predicate, factory):
-        cls._registered.append((predicate, factory))
+    def register(cls, predicate, factory, prepend=False):
+        """
+        Adds another type X of typecheck annotations to the framework.
+        predicate(annot) indicates whether annot has annotation type X;
+        factory(annot) creates the appropriate typechecker instance.
+        The checker type is normally added after the existing ones,
+        but 'prepend' makes it come first.
+        """
+        if prepend:
+            cls._registered.insert(0, (predicate, factory))
+        else:
+            cls._registered.append((predicate, factory))
 
     @classmethod
-    def create(cls, value):
-        if isinstance(value, cls):
-            return value
+    def create(cls, annotation_or_checker):
+        if isinstance(annotation_or_checker, cls):
+            return annotation_or_checker  # is a checker already
+        annotation = annotation_or_checker
         for predicate, factory in cls._registered:
-            if predicate(value):
-                return factory(value)
+            if predicate(annotation):
+                return factory(annotation)
         else:
             return None
 
@@ -65,7 +77,7 @@ class TypeChecker(Checker):
     def check(self, value):
         return isinstance(value, self._cls)
 
-
+# Note: 'typing'-module checkers must register _before_ this one:
 Checker.register(inspect.isclass, TypeChecker)
 
 ################################################################################
