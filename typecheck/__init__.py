@@ -4,28 +4,15 @@
 # (c) 2014-2016 Lutz Prechelt
 # Distributed under BSD license.
 
-__version__ = "1.2"
+__version__ = "2.0"
 
-__all__ = [
-    # decorators:
-    "typecheck", "typecheck_with_exceptions",
-    # check predicate generators:
-    "hasattrs", "re",
-    "seq_of", "list_of", "map_of",
-    "range", "enum",
-    "any", "all", "none",
-    # check predicate generators:
-    "anything",
-    # exceptions:
-    "TypeCheckError", "InputParameterError", "ReturnValueError",
-    "TypeCheckSpecificationError",
-    # utility methods:
-    "disable",  # deprecated
-    "enable",  # deprecated
-]
-
-from .decorators import typecheck, typecheck_with_exceptions
 from .framework import (TypeCheckError, InputParameterError, ReturnValueError,
                         TypeCheckSpecificationError,
                         optional, disable, enable)
-from .tc_predicates import *
+from .decorators import typecheck, typecheck_with_exceptions
+from .typing_predicates import _dummy  # registers checkers
+from .tc_predicates import (hasattrs, re,
+                            seq_of, list_of, map_of,
+                            range, enum,
+                            any, all, none, anything,
+                           )
