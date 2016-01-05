@@ -1,5 +1,6 @@
 import functools
 import inspect
+import typing as tg
 
 import typecheck.framework as fw
 
@@ -99,3 +100,6 @@ def typecheck_with_exceptions(*,
                                     return_value_error=return_value_error)
 
 ################################################################################
+
+# TODO: @dynamictypecheck as @typecheck plus @typing.no_type_check:
+# dynamictypecheck = tg.no_type_check_decorator(typecheck)

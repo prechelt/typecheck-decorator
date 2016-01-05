@@ -569,7 +569,7 @@ def test_default_vs_checked_kwargs10():
     with expected(tc.InputParameterError,
                   "pxc_q2c\(\) has got an incompatible value for (p: 1.0|q: 2.0)"):
         pxc_q2c(p=1.0, q=2.0)
-    # TODO: should tc.optional() be required when a default is given? No! (also elsewhere)
+    # TODO: should tc.optional() be required when a 'None' default is given? No! (also elsewhere)
     with expected(tc.InputParameterError("pxc_q2c() has got an incompatible value for q: <no value>")):
         pxc_q2c(p=1)
     with expected(tc.InputParameterError("pxc_q2c() has got an incompatible value for p: <no value>")):

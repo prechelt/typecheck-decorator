@@ -116,7 +116,7 @@ class sequence_of(fw.Checker):
             checkhere = builtins.range(len(value))
         else:
             checkhere = random.sample(builtins.range(1, len(value) - 1),
-                                      self._checkonly - 2)
+                                      self._checkonly - 2)  # w/o replacement
             checkhere += [0, len(value) - 1]  # always check first and last
         for idx in checkhere:
             if not self._check.check(value[idx]):
