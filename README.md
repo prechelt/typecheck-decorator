@@ -115,6 +115,11 @@ some parameter PAR:
   The annotation is one of those defined in the module ``typing``.
   (This module was introduced in Python 3.5 and is available from 
    PyPI for earlier Python 3 versions.)
+  This is a special case of 'Types' introduced above. 
+  It requires special handling internally and provides extended possibilities
+  externally (e.g. describing generic functions or specifying container
+  types with particular content types in a manner possibly understood by 
+  static type checking tools).
 
 The following subsections explain each of them.
 The same annotations are valid for function results (as opposed to parameters)
@@ -641,10 +646,10 @@ all the time.
 
 There are essentially only two cases where execution time might
 become a real issue:
-- A non-trivial annotation on a trivial function that is being
-  called very frequently in a tight loop.
-- Checking the types of every element of a large data structure
-  many times, although only few of those elements will actually be accessed.
+- An annotation on a trivial function that is being
+  called frequently in a tight loop.
+- Checking the types of every element of a large data structure,
+  when only few of those elements will actually be accessed.
 
 
 Limitations
@@ -657,6 +662,8 @@ Limitations
 2. There should be a way to specify fixed dictionaries or named tuples
    like one can specify fixed lists or tuples.
    This feature will also some day appear, weather permitting.
+3. typing.Callable!!!
+4. !!!
 
 
 Version history
@@ -704,6 +711,10 @@ Version history
 - **1.2**:
   - FIX: added checking for non-kwonlyargs named arguments
   - cut the implementation and tests into several pieces
+  
+- **2.0**:
+  - introduces support for annotations according to the Python 3.5
+    ``typing`` module.
 
 
 Further contributors
@@ -725,7 +736,8 @@ Similar packages
   is far more flexible in expressing types.
   gradual as of 2015-12 has status "pre-alpha".
 - ``threecheck`` is similar to typecheck-decorator in
-  approach and expressiveness.
+  approach and expressiveness, except it has (as of v1.0)
+  no support for the ``typing`` module.
 
 
 TO DO
@@ -733,4 +745,4 @@ TO DO
 
 - use decorator package?
 - add more specialized exception messages, e.g. for sequences and dicts
-- support the Python 3.5 'typing' module
+  and in particular where type variable violations are involved

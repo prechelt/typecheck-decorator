@@ -37,9 +37,16 @@ def test_Sequence_int_with_wrong_result():
 X = tg.TypeVar('X')
 @tc.typecheck
 def foo_Sequence_X_to_Sequence_X(xs: tg.Sequence[X], x: X) -> tg.Sequence[X]:
-    x.append(y)
-    return x
+    xs.append(x)
+    return xs
 
 def test_Sequence_X_int_OK():
     assert foo_Sequence_X_to_Sequence_X([1, 2], 4) == [1, 2, 4]
+
+def test_Sequence_X_int_notOK():
+    with expected(tc.InputParameterError(
+            "foo_Sequence_X_to_Sequence_X() has got an incompatible value for x: a_string")):
+        foo_Sequence_X_to_Sequence_X([1, 2], "a_string")
+
+
 

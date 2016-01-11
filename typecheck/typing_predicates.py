@@ -55,4 +55,21 @@ class GenericMetaChecker(fw.Checker):
 fw.Checker.register(_is_GenericMeta_class, GenericMetaChecker, prepend=True)
 
 
+def _is_typevar(something):
+    return type(something) == tg.TypeVar
 
+class TypeVarChecker(fw.Checker):
+    def __init__(self, typevar):
+        self.typevar = typevar
+
+    def check(self, value, namespace):
+        """
+        See whether the TypeVar is bound for the first time
+        or is met with _exactly_ the same type as previously.
+        Everything else is a type error.
+        """
+        print("TypeVarChecker.check")
+        return namespace.is_compatible(self.typevar, type(value))
+        # TODO: more informative error message, showing the TypeVar binding
+
+fw.Checker.register(_is_typevar, TypeVarChecker, prepend=True)

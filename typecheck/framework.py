@@ -30,6 +30,79 @@ class ReturnValueError(TypeCheckError): pass
 
 ################################################################################
 
+class TypeVarNamespace:
+    """
+    TypeVarNamespace objects hold TypeVar bindings.
+
+    Consists of two sub-namespaces:
+    A dictionary holding pairs of a TypeVar object and a type object
+    for the call-level scope of a single function call
+    and a similar dictionary for the instance-level scope of bindings for the
+    type parameters of generic classes.
+    The latter is stored as attribute NS_ATTRIBUTE in the class instance itself.
+    Most TypeVarNamespace objects will never be used after their creation.
+    """
+    NS_ATTRIBUTE = '__tc_bindings__'
+
+    def __init__(self, instance=None):
+        """_instance is the self of the method call if the class is a tg.Generic"""
+        self._ns = dict()
+        self._instance = instance
+        self._instance_ns = (self._instance and
+                             self._instance.__dict__.get(self.NS_ATTRIBUTE))
+
+    def bind(self, typevar, its_type):
+        """
+        Binds typevar to the type its_type.
+        Binding occurs on the instance if the typevar is a TypeVar of the
+        generic type of the instance, on call level otherwise.
+        """
+        assert type(typevar) == tg.TypeVar
+        if self.is_generic_in(typevar):
+            self.bind_to_instance(typevar, its_type)
+        else:
+            self._ns[typevar] = its_type
+
+    def is_generic_in(self, typevar):
+        if not self._instance or not isinstance(self._instance, tg.Generic):
+            return False
+        # TODO: Is the following really sufficient?:
+        return typevar in self._instance.__parameters__
+
+    def bind_to_instance(self, typevar, its_type):
+        if self._instance_ns is None:  # we've not bound something previously:
+            self._instance.__setattr__(self.NS_ATTRIBUTE, dict())
+            self._instance_ns = self._instance.__dict__[self.NS_ATTRIBUTE]
+        self._instance_ns[typevar] = its_type
+
+    def is_bound(self, typevar):
+        if typevar in self._ns:
+            return True
+        return self._instance_ns and typevar in self._instance_ns
+
+    def binding_of(self, typevar):
+        """Returns the type the typevar is bound to, or None."""
+        if typevar in self._ns:
+            return self._ns[typevar]
+        if self._instance_ns and typevar in self._instance_ns:
+            return self._instance_ns[typevar]
+        return None
+
+    def is_compatible(self, typevar, its_type):
+        """
+        Checks whether its_type conforms to typevar.
+        If the typevar is already bound, the types must be the same.
+        If it is not bound, it will be bound.
+        """
+        binding = self.binding_of(typevar)
+        if binding is None:
+            self.bind(typevar, its_type)
+            return True
+        else:
+            return binding == its_type  # must be exactly the same type
+
+################################################################################
+
 class Checker:
     class NoValue:
         def __str__(self):

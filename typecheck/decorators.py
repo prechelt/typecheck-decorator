@@ -20,7 +20,8 @@ def typecheck(method, *, input_parameter_error=fw.InputParameterError,
     kwarg_defaults = argspec.kwonlydefaults or {}
 
     for n, v in argspec.annotations.items():
-        namespace = dict()  # for defaults w TypeVars; bindings will be forgotten!
+        # namespace for defaults w TypeVars; bindings will be forgotten!:
+        namespace = fw.TypeVarNamespace()
         checker = fw.Checker.create(v)
         if checker is None:
             raise fw.TypeCheckSpecificationError("invalid typecheck for {0}".format(n))
@@ -45,7 +46,11 @@ def typecheck(method, *, input_parameter_error=fw.InputParameterError,
 
 
     def typecheck_invocation_proxy(*args, **kwargs):
-        namespace = dict()  # for TypeVars not inherited from a class
+        if inspect.ismethod(method) and not inspect.isclass(args[0]):
+            theself = args[0]  # call to instance method
+        else:
+            theself = None  # call to function, static method, or class method
+        namespace = fw.TypeVarNamespace(theself)
         # Validate positional parameters:
         for declaration, arg in zip(arg_checkers, args):
             if declaration is not None:
