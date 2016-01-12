@@ -7,14 +7,15 @@ import typecheck.framework as fw
 def typecheck(method, *, input_parameter_error=fw.InputParameterError,
               return_value_error=fw.ReturnValueError):
     argspec = inspect.getfullargspec(method)
+    argnames = argspec.args
     if not argspec.annotations or not fw._enabled:
         return method
 
     default_arg_count = len(argspec.defaults or [])
-    non_default_arg_count = len(argspec.args) - default_arg_count
+    non_default_arg_count = len(argnames) - default_arg_count
 
     method_name = method.__name__
-    arg_checkers = [None] * len(argspec.args)
+    arg_checkers = [None] * len(argnames)
     kwarg_checkers = {}
     return_checker = None
     kwarg_defaults = argspec.kwonlydefaults or {}
@@ -46,7 +47,8 @@ def typecheck(method, *, input_parameter_error=fw.InputParameterError,
 
 
     def typecheck_invocation_proxy(*args, **kwargs):
-        if inspect.ismethod(method) and not inspect.isclass(args[0]):
+        # TODO: '.' not in method_name  for methods. Why not?
+        if len(argnames) > 0 and argnames[0] == 'self':
             theself = args[0]  # call to instance method
         else:
             theself = None  # call to function, static method, or class method

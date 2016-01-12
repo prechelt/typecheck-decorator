@@ -663,7 +663,11 @@ Limitations
    like one can specify fixed lists or tuples.
    This feature will also some day appear, weather permitting.
 3. typing.Callable!!!
-4. !!!
+4. Python 3 has no unbound methods anymore, therefore
+   binding of type variables to instances of a generic class ``C``
+   can only be recognized if the first parameter of 
+   each method ``m`` involved is named ``self`` and 
+   the method's ``__name__`` is ``"C.m"`` as usual.
 
 
 Version history

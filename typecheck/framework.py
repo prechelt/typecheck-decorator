@@ -30,6 +30,10 @@ class ReturnValueError(TypeCheckError): pass
 
 ################################################################################
 
+def is_GenericMeta_class(something):
+    return (inspect.isclass(something) and
+            type(something) == tg.GenericMeta)
+
 class TypeVarNamespace:
     """
     TypeVarNamespace objects hold TypeVar bindings.
@@ -64,7 +68,7 @@ class TypeVarNamespace:
             self._ns[typevar] = its_type
 
     def is_generic_in(self, typevar):
-        if not self._instance or not isinstance(self._instance, tg.Generic):
+        if not is_GenericMeta_class(type(self._instance)):
             return False
         # TODO: Is the following really sufficient?:
         return typevar in self._instance.__parameters__

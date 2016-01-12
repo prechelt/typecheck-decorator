@@ -14,10 +14,6 @@ typing_typetypes = [tg.GenericMeta,
                     tg.CallableMeta,
                     tg._ProtocolMeta]
 
-def _is_GenericMeta_class(something):
-    return (inspect.isclass(something) and
-            type(something) == tg.GenericMeta)
-
 class GenericMetaChecker(fw.Checker):
     def __init__(self, tg_class):
         self._cls = tg_class
@@ -52,7 +48,7 @@ class GenericMetaChecker(fw.Checker):
         assert len(contenttypes) == 1
         return tcp.sequence_of(contenttypes[0]).check(value, namespace)
 
-fw.Checker.register(_is_GenericMeta_class, GenericMetaChecker, prepend=True)
+fw.Checker.register(fw.is_GenericMeta_class, GenericMetaChecker, prepend=True)
 
 
 def _is_typevar(something):
@@ -68,7 +64,6 @@ class TypeVarChecker(fw.Checker):
         or is met with _exactly_ the same type as previously.
         Everything else is a type error.
         """
-        print("TypeVarChecker.check")
         return namespace.is_compatible(self.typevar, type(value))
         # TODO: more informative error message, showing the TypeVar binding
 
