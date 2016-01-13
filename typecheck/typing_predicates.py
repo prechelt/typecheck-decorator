@@ -62,6 +62,7 @@ class TypeVarChecker(fw.Checker):
         """
         See whether the TypeVar is bound for the first time
         or is met with _exactly_ the same type as previously.
+        That type must also obey the TypeVar's bound, if any.
         Everything else is a type error.
         """
         return namespace.is_compatible(self.typevar, type(value))

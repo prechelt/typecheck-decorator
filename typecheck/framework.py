@@ -45,6 +45,7 @@ class TypeVarNamespace:
     type parameters of generic classes.
     The latter is stored as attribute NS_ATTRIBUTE in the class instance itself.
     Most TypeVarNamespace objects will never be used after their creation.
+    is_compatible() implements bound, covariance, and contravariance logic.
     """
     NS_ATTRIBUTE = '__tc_bindings__'
 
@@ -95,13 +96,19 @@ class TypeVarNamespace:
     def is_compatible(self, typevar, its_type):
         """
         Checks whether its_type conforms to typevar.
-        If the typevar is already bound, the types must be the same.
-        If it is not bound, it will be bound.
+        If the typevar is not yet bound, it will be bound to its_type.
         """
         binding = self.binding_of(typevar)
+        if (binding and typevar.__bound__ and
+                not issubclass(binding, typevar.__bound__)):
+            return False  # bound violation
         if binding is None:
             self.bind(typevar, its_type)
-            return True
+            return True  # initial binding
+        elif typevar.__covariant__:
+            return issubclass(its_type, binding)  # allowed subtype?
+        elif typevar.__contravariant__:
+            return issubclass(binding, its_type)  # allowed supertype?
         else:
             return binding == its_type  # must be exactly the same type
 
