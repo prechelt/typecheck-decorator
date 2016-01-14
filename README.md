@@ -659,15 +659,42 @@ Limitations
    Essentially, it is always ``(*args, **kwargs)``.
    This will perhaps one day be changed by using the
    ``decorator`` package or a similar technique.
-2. There should be a way to specify fixed dictionaries or named tuples
-   like one can specify fixed lists or tuples.
-   This feature will also some day appear, weather permitting.
 3. typing.Callable!!!
 4. Python 3 has no unbound methods anymore, therefore
    binding of type variables to instances of a generic class ``C``
-   can only be recognized if the first parameter of 
-   each method ``m`` involved is named ``self`` and 
-   the method's ``__name__`` is ``"C.m"`` as usual.
+   will only be recognized heuristically: The first parameter of 
+   each method ``m`` involved must be named ``self``.
+5. This module does not follow Section "The numeric tower"
+   of PEP 484, which suggests to accept ``int`` where ``float``
+   is annotated. For us, these two are (so far) considered
+   incompatible and you will need to annotate ``numbers.Float`` if
+   you want it mix them.
+6. Likewise, ``bytearray`` and ``memoryview`` are not currently
+   acceptable where ``bytes`` is declared; you currently need to
+   use ``tg.ByteString`` to mix those.
+7. PEP 484 forward references are not yet supported.
+   This will change in a future version.
+8. Contrary to PEP 484, a default argument value of ``None``
+   does not yet modify type ``X`` to become ``tg.Optional[X]``.
+9. Decorator ``@no_type_check`` is not yet supported.
+10. PEP 484 "type comments" are (obviously) not analyzed in any way.
+11. PEP 484 ``tg.cast`` does currently not check anything. 
+   (As long as the claim formulated by the cast
+   is correct, this is sufficient.)
+12. The module does not read PEP 484 stub files.
+   (Typechecking large parts of in particular the builtins
+    would create performance problems anyway.)
+13. The module does not support the ``@overload`` decorator.
+   If ``@overload`` is used, only the last declaration executed for a name 
+   survives, whether it is decorated or not.
+14. The proprietary annotations described in Sections 4.2, 4.3, and 4.4
+   may have to be retired some day, so you should probably stop using them.
+   (Perhaps with the exception of a few particularly tasty uses that you
+    are willing to rework later on.)
+   See "What about existing uses of annotations?" in PEP 484.
+
+
+
 
 
 Version history
