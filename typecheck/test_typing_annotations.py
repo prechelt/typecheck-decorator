@@ -51,7 +51,8 @@ def test_TypeVarNamespace_without_instance():
         assert ns.is_bound(X)
         assert ns.binding_of(X) == thetype
         assert ns.is_compatible(X, thetype)
-        assert not ns.is_compatible(X, B)  # not compatible, even as subclass
+        if thetype == A:
+            assert ns.is_compatible(X, B)
 
 
 X = tg.TypeVar('X')  # global type variable, used in various places
@@ -88,6 +89,7 @@ class MyGeneric(tg.Generic[X]):
 diverse_collection = (None, False, 1, 2.0, "three", [4], {5: "six"},
                       MyGeneric(), MyGeneric("seven"),
                       MyGeneric[X](), MyGeneric[str]("seven"),
+                      dt.date.today(), dt.datetime.now(),
                       )  # None must be first
 
 
@@ -114,25 +116,21 @@ def test_MyGeneric_OK_and_not_OK():
             mygen = MyGeneric(element1)
             mygen.append(element1)  # binds X
             mygen.append(element1)  # checks X binding: OK
-            with expected(tc.InputParameterError("")):
-                print(element1, element2)
-                mygen.append(element2)  # violates X binding
+            print(element1, element2)
+            if (issubclass(type(element1), type(element2)) or
+                    issubclass(type(element2), type(element1))):
+                mygen.append(element2)  # conforms to X binding
+            else:
+                with expected(tc.InputParameterError("")):
+                    mygen.append(element2)  # violates X binding
 
 ############################################################################
-# type variable with a bound or covariance
-
-# We assume that contravariance and a combination of a bound and a variance
-# are sufficiently straightforward that they will work despite a lack of tests.
+# type variable with bound or constraint
 
 Tb = tg.TypeVar('Tb', bound=dt.date)
-Tc = tg.TypeVar('Tb', covariant=True)
 
 @tc.typecheck
 def foo_with_bound(date1: Tb, date2: Tb):
-    pass
-
-@tc.typecheck
-def foo_with_covariance(date1: Tc, date2: Tc):
     pass
 
 def test_TypeVar_bound_OK_sameclass():
@@ -141,22 +139,32 @@ def test_TypeVar_bound_OK_sameclass():
 def test_TypeVar_bound_OK_subclass():
     foo_with_bound(dt.datetime.now(), dt.datetime.now())
 
+def test_TypeVar_bound_OK_mixed_classes():
+    foo_with_bound(dt.datetime.now(), dt.date.today())
+    foo_with_bound(dt.date.today(), dt.datetime.now())
+
 def test_TypeVar_bound_violated():
     with (expected(tc.InputParameterError(""))):
         foo_with_bound(1, 2)  # both same type, but now below the bound
-
-def test_TypeVar_covariant_OK_sameclass():
-    foo_with_covariance(dt.date.today(), dt.date.today())
-    foo_with_covariance(dt.datetime.now(), dt.datetime.now())
-    foo_with_covariance(2.0, 1.0)
-
-def test_TypeVar_covariant_OK_subclass():
-    foo_with_covariance(dt.date.today(), dt.datetime.now())
-
-def test_TypeVar_covariance_violated():
     with (expected(tc.InputParameterError(""))):
-        # after binding to the subtype, the supertype is no longer allowed:
-        foo_with_covariance(dt.datetime.now(), dt.date.today())
+        foo_with_bound(object(), object())  # above the bound
+
+
+Tc = tg.TypeVar('Tc', str, bytes)
+
+@tc.typecheck
+def foo_with_constraint(date1: Tc, date2: Tc):
+    pass
+
+def test_TypeVar_constraint_OK():
+    foo_with_constraint("str1", "str2")
+    foo_with_constraint(b"bytes1", b"bytes2")
+
+def test_TypeVar_constraint_not_OK():
+    with (expected(tc.InputParameterError(""))):
+        foo_with_constraint("str1", b"bytes1")
+    with (expected(tc.InputParameterError(""))):
+        foo_with_constraint(("b","y"), ("t","e"))
 
 
 ############################################################################

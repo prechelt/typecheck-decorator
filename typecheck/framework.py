@@ -97,20 +97,28 @@ class TypeVarNamespace:
         """
         Checks whether its_type conforms to typevar.
         If the typevar is not yet bound, it will be bound to its_type.
+        The covariance/contravariance checking described in the respective section
+        of PEP484 applies to declared types, but here we have actual types;
+        therefore, (1) subtypes are always compatible, (2) we may have to
+        rebind the type variable to supertypes of the current binding several
+        times until the required most general binding is found.
         """
-        binding = self.binding_of(typevar)
-        if (binding and typevar.__bound__ and
+        result = True
+        binding = self.binding_of(typevar)  # may or may not exist
+        if binding is None:
+            self.bind(typevar, its_type)  # initial binding, OK
+        elif issubclass(binding, its_type):
+            self.bind(typevar, its_type)  # rebind to supertype, OK
+        elif not issubclass(its_type, binding):  # accept like TypeChecker
+            return False
+        binding = self.binding_of(typevar)  # will now exist
+        if (typevar.__bound__ and
                 not issubclass(binding, typevar.__bound__)):
             return False  # bound violation
-        if binding is None:
-            self.bind(typevar, its_type)
-            return True  # initial binding
-        elif typevar.__covariant__:
-            return issubclass(its_type, binding)  # allowed subtype?
-        elif typevar.__contravariant__:
-            return issubclass(binding, its_type)  # allowed supertype?
-        else:
-            return binding == its_type  # must be exactly the same type
+        if (len(typevar.__constraints__) > 0 and
+                not issubclass(binding, tg.Union[typevar.__constraints__])):
+            return False  # constraint violation
+        return True
 
 ################################################################################
 
