@@ -167,7 +167,8 @@ class TypeChecker(Checker):
         self._cls = cls
 
     def check(self, value, namespace):
-        return isinstance(value, self._cls)
+        # return isinstance(value, self._cls)  # does not work for tg.Protocol
+        return issubclass(type(value), self._cls)
 
 # Note: 'typing'-module checkers must register _before_ this one:
 Checker.register(inspect.isclass, TypeChecker)

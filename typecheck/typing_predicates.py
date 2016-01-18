@@ -20,11 +20,12 @@ class GenericMetaChecker(fw.Checker):
 
     def check(self, value, namespace):
         if not isinstance(value, self._cls):
-            return False
+            return False  # totally the wrong type
+        # now check the content of the container, if possible:
         metaclass = type(self._cls)
         assert metaclass == tg.GenericMeta
         params = self._cls.__parameters__
-        # now check checkable relevant properties of all
+        # check checkable relevant properties of all
         # relevant Generic subclasses from the typing module:
         if isinstance(value, tg.Sequence):
             return self._check_sequence(value, params, namespace)
@@ -42,11 +43,13 @@ class GenericMetaChecker(fw.Checker):
         assert False  # TODO: implement _check_by_iterator
 
     def _check_mapping(self, value, contenttypes, namespace):
-        assert False  # TODO: implement _check_mapping
+        assert len(contenttypes) == 2
+        return tcp.map_of(contenttypes[0], contenttypes[1]).check(value, namespace)
 
     def _check_sequence(self, value, contenttypes, namespace):
         assert len(contenttypes) == 1
         return tcp.sequence_of(contenttypes[0]).check(value, namespace)
+        # TODO: move sequence content checking routine to fw
 
 fw.Checker.register(fw.is_GenericMeta_class, GenericMetaChecker, prepend=True)
 
@@ -69,3 +72,5 @@ class TypeVarChecker(fw.Checker):
         # TODO: more informative error message, showing the TypeVar binding
 
 fw.Checker.register(_is_typevar, TypeVarChecker, prepend=True)
+
+

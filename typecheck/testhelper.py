@@ -21,5 +21,6 @@ class expected:
         msg = str(exc_value)
         return (issubclass(exc_type, self._type) and
                 (self._msg is None or
-                 msg.startswith(self._msg) or  # for instance
-                 re.match(self._msg, msg)))  # for class + regexp
+                 msg.startswith(self._msg) or
+                 msg.endswith(self._msg) or
+                 re.search(self._msg, msg)))  # regexp is special wrt "[" etc.

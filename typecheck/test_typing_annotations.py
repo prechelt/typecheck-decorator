@@ -1,39 +1,46 @@
 import datetime as dt
+import io
+import re
+import sys
+import tempfile
+
 import typing as tg
+
+import pytest
 
 import typecheck as tc
 import typecheck.framework as fw
-from .testhelper import expected
+from typecheck.testhelper import expected
 
 ############################################################################
 # Generic type with fixed content type
 
 @tc.typecheck
-def foo_Sequence_int_to_Sequence_int(x: tg.Sequence[int], y) -> tg.Sequence[int]:
+def foo_Sequence_int_to_List_int(x: tg.Sequence[int], y) -> tg.List[int]:
     x.append(y)
     return x
 
 
 def test_Sequence_int_with_empty_Sequence():
-    assert foo_Sequence_int_to_Sequence_int([], 4) == [4]
+    assert foo_Sequence_int_to_List_int([], 4) == [4]
 
 def test_Sequence_int_OK():
-    assert foo_Sequence_int_to_Sequence_int([1, 2], 4) == [1, 2, 4]
+    assert foo_Sequence_int_to_List_int([1, 2], 4) == [1, 2, 4]
 
 def test_Sequence_int_with_no_Sequence():
     with expected(tc.InputParameterError(
-            "foo_Sequence_int_to_Sequence_int() has got an incompatible value for x: 4")):
-        foo_Sequence_int_to_Sequence_int(4)
+            "has got an incompatible value for x: 4")):
+        foo_Sequence_int_to_List_int(4)
 
 def test_Sequence_int_with_wrong_Sequence():
     with expected(tc.InputParameterError(
-            "foo_Sequence_int_to_Sequence_int() has got an incompatible value for x: ['mystring']")):
-        foo_Sequence_int_to_Sequence_int(["mystring"], 77)
+            "has got an incompatible value for x: ['mystring']")):
+        foo_Sequence_int_to_List_int(["mystring"], 77)
 
 def test_Sequence_int_with_wrong_result():
     with expected(tc.ReturnValueError(
-            "foo_Sequence_int_to_Sequence_int() has returned an incompatible value: [1, '2']")):
-        foo_Sequence_int_to_Sequence_int([1], "2")
+            "has returned an incompatible value: [1, '2']")):
+        foo_Sequence_int_to_List_int([1], "2")
 
 ############################################################################
 # Generic stand-alone functions
@@ -124,6 +131,8 @@ def test_MyGeneric_OK_and_not_OK():
                 with expected(tc.InputParameterError("")):
                     mygen.append(element2)  # violates X binding
 
+# TODO: test Generic class with multiple inheritance
+
 ############################################################################
 # type variable with bound or constraint
 
@@ -168,9 +177,171 @@ def test_TypeVar_constraint_not_OK():
 
 
 ############################################################################
+# Other tg generic classes
+
+@tc.typecheck
+def foo_Mapping_str_float_to_float(m: tg.Mapping[str,float], k: str) -> float:
+    return m[k]
+
+def test_Mapping_str_float_OK():
+    assert foo_Mapping_str_float_to_float(dict(a=4.0), "a") == 4.0
+
+def test_Mapping_str_float_not_OK():
+    with expected(tc.InputParameterError("{'a': True}")):  # wrong value type
+        assert foo_Mapping_str_float_to_float(dict(a=True), "a") == True
+    with expected(tc.InputParameterError("{b'a': 4.0}")):  # wrong key type
+        assert foo_Mapping_str_float_to_float({b'a':4.0}, b"a") == 4.0
+
+
+############################################################################
+# for Iterable, Iterator, Container we cannot check the actual content
+
+@tc.typecheck
+def foo_Iterable(i: tg.Iterable[float]):
+    pass
+
+@tc.typecheck
+def foo_Iterator(i: tg.Iterator[dt.date]):
+    pass
+
+@tc.typecheck
+def foo_Container(c: tg.Container[tg.Sequence[str]]):
+    pass
+
+def test_Iterable_Iterator_Container_OK():
+    """
+    No extra code is needed to check Iterable, Iterator, and Container,
+    because there is no suitable way to access their contents.
+    """
+    foo_Iterable([4.0, 5.0])
+    foo_Iterator((dt.date.today(), dt.date.today()).__iter__())
+    foo_Container([["nested", "list"], ["of", "strings"]])
+
+def test_Iterable_Container_content_not_OK_catchable():
+    """
+    Because there is no suitable way to access their contents,
+    such generic types may still pass the typecheck if their content is
+    of the wrong type.
+    This is a fundamental problem, not an implementation gap.
+    The only cases where improper contents will be caught is when the argument
+    is also of a more specific generic type: Sequence, Mapping, AbstractSet
+    """
+    with expected(tc.InputParameterError("shouldn't be")):
+        foo_Iterable(["shouldn't be", "strings here"])
+    with expected(tc.InputParameterError("3, 4")):
+        foo_Container([[3, 4], [5, 6]])
+
+def test_Iterator_totally_not_OK():
+    with expected(tc.InputParameterError("")):
+        foo_Iterator((dt.date.today(), dt.date.today()))  # lacks .__iter__()
+
+
+class MySpecialtyGeneric(tg.Iterable[X], tg.Container[X]):
+    def __init__(self, contents):
+        assert isinstance(contents, tg.Sequence)
+        self.contents = contents  # an 'nice' container, but hidden within
+    def __iter__(self):
+        return self.contents.__iter__()
+    def __contains__(self, item):
+        return item in self.contents
+
+@tc.typecheck
+def foo_MySpecialtyGeneric(c: MySpecialtyGeneric[float]):
+    pass
+
+@pytest.mark.skipif(sys.version_info < (3,5),
+                    reason="bug in typing 3.5.0.1 w.r.t Iterable")
+def test_Iterable_Iterator_Container_content_not_OK_not_catchable():
+    """
+    See above: With generics that are not otherwise checkable,
+    wrong contents will not be detected.
+    """
+    assert issubclass(tg.Iterable, tg.Generic)  # bug in typing 3.5.0.1 gone?
+    incorrect_content = MySpecialtyGeneric(["shouldn't be", "strings here"])
+    foo_Iterable(incorrect_content)  # cannot detect
+    foo_Container(incorrect_content)  # cannot detect
+    foo_MySpecialtyGeneric(incorrect_content)  # cannot detect
+
+############################################################################
+
+
+############################################################################
 
 
 ############################################################################
 
 
 ############################################################################
+
+
+############################################################################
+# Tuple
+
+############################################################################
+# Union,
+
+############################################################################
+# Any,
+
+############################################################################
+# Optional
+
+############################################################################
+# Callable
+
+############################################################################
+# the Protocols
+
+# is handled by TypeChecker without special code, so we do not test them all
+
+@tc.typecheck
+def foo_SupportsAbs(x: tg.SupportsAbs) -> tg.SupportsAbs:
+    return abs(x)
+
+def test_SupportsAbs_OK():
+    assert foo_SupportsAbs(-4) == 4
+    assert foo_SupportsAbs(0.0) == 0.0
+    assert foo_SupportsAbs(True) == 1
+
+def test_SupportsAbs_not_OK():
+    with expected(tc.InputParameterError("")):
+        foo_SupportsAbs("-4")
+
+############################################################################
+# io
+
+def test_io_is_halfhearted():
+    """
+    It would be pythonic if tg.io.IO applied to all file-like objects.
+    But as of 3.5, it does not, which is what we assert here.
+    """
+    with io.StringIO("my string as input") as f:
+        assert not isinstance(f, tg.io.TextIO)
+        assert not isinstance(f, tg.io.IO[str])
+    with tempfile.TemporaryFile("wb") as f:
+        if "file" in dir(f):
+            f = f.file  # TemporaryFile() on non-POSIX platform
+        assert not isinstance(f, tg.io.BinaryIO)
+        assert not isinstance(f, tg.io.IO[bytes])
+
+############################################################################
+# re
+
+def test_re_is_halfhearted():
+    """
+    As of 3.5, the implementation of tg appears to be incomplete for TypeAlias.
+    All those asserts should in fact be successful.
+    """
+    error = TypeError("Type aliases cannot be used with isinstance().")
+    with expected(error):
+        assert isinstance(re.compile("regexp"), tg.re.Pattern[str])
+    with expected(error):
+        assert isinstance(re.compile(b"byteregexp"), tg.re.Pattern[bytes])
+    with expected(error):
+        assert isinstance(re.match("regexp", "string"), tg.re.Match[str])
+    with expected(error):
+        assert isinstance(re.match(b"regexp", b"string"), tg.re.Match[bytes])
+
+############################################################################
+
+#test_Iterable_Iterator_Container_content_not_OK_not_catchable()
