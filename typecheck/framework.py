@@ -1,4 +1,4 @@
-
+import collections
 import inspect
 import typing as tg
 
@@ -30,9 +30,9 @@ class ReturnValueError(TypeCheckError): pass
 
 ################################################################################
 
-def is_GenericMeta_class(something):
-    return (inspect.isclass(something) and
-            type(something) == tg.GenericMeta)
+def _is_GenericMeta_class(annotation):
+    return (inspect.isclass(annotation) and
+            type(annotation) == tg.GenericMeta)
 
 class TypeVarNamespace:
     """
@@ -69,7 +69,7 @@ class TypeVarNamespace:
             self._ns[typevar] = its_type
 
     def is_generic_in(self, typevar):
-        if not is_GenericMeta_class(type(self._instance)):
+        if not _is_GenericMeta_class(type(self._instance)):
             return False
         # TODO: Is the following really sufficient?:
         return typevar in self._instance.__parameters__
@@ -183,3 +183,34 @@ class optional(Checker):
         return (value is Checker.no_value or
                 value is None or
                 self._check.check(value, namespace))
+
+################################################################################
+
+def _is_sequence(annotation):
+    return isinstance(annotation, collections.Sequence)
+
+
+class FixedSequenceChecker(Checker):
+    def __init__(self, the_sequence):
+        self._cls = type(the_sequence)
+        self._checks = tuple(Checker.create(x) for x in iter(the_sequence))
+
+    def check(self, values, namespace):
+        """specifying a plain tuple allows arguments that are tuples or lists;
+        specifying a specialized (subclassed) tuple allows only that type;
+        specifying a list allows only that list type."""
+        is_tuplish_type = (issubclass(self._cls, tg.Tuple) or
+                           issubclass(type(values), self._cls))
+        if (not _is_sequence(values) or not is_tuplish_type or
+                len(values) != len(self._checks)):
+            return False
+        for thischeck, thisvalue in zip(self._checks, values):
+            if not thischeck(thisvalue, namespace):
+                return False
+        return True
+
+
+Checker.register(_is_sequence, FixedSequenceChecker)
+
+################################################################################
+

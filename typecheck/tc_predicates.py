@@ -6,39 +6,12 @@ import re as regex_module
 import typecheck.framework as fw
 
 
-def issequence(x):
-    return isinstance(x, collections.Sequence)
+def isnamedtuple(annotation):
+    return isinstance(annotation, tuple) and ismapping(annotation.__dict__)
 
 
-class FixedSequenceChecker(fw.Checker):
-    def __init__(self, the_sequence):
-        self._cls = type(the_sequence)
-        self._checks = tuple(fw.Checker.create(x) for x in iter(the_sequence))
-
-    def check(self, values, namespace):
-        """specifying a plain tuple allows arguments that are tuples or lists;
-        specifying a specialized (subclassed) tuple allows only that type;
-        specifying a list allows only that list type."""
-        if not issequence(values):
-            return False
-        if self._cls == tuple or isinstance(values, self._cls):
-            if len(values) != len(self._checks):  return False
-            for thischeck, thisvalue in zip(self._checks, values):
-                if not thischeck(thisvalue, namespace): return False
-            return True
-        else:
-            return False
-
-
-fw.Checker.register(issequence, FixedSequenceChecker)
-
-
-def isnamedtuple(x):
-    return isinstance(x, tuple) and ismapping(x.__dict__)
-
-
-def ismapping(x):
-    return isinstance(x, collections.Mapping)
+def ismapping(annotation):
+    return isinstance(annotation, collections.Mapping)
 
 
 class FixedMappingChecker(fw.Checker):
@@ -62,6 +35,7 @@ fw.Checker.register(ismapping, FixedMappingChecker)
 
 
 class CallableChecker(fw.Checker):
+    """Used if the annotation is a function (which must be predicate)."""
     def __init__(self, callable):
         self._callable = callable
 

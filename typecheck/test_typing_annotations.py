@@ -272,10 +272,46 @@ def test_Iterable_Iterator_Container_content_not_OK_not_catchable():
 
 
 ############################################################################
+# NamedTuple
+
+Employee = tg.NamedTuple('Employee', [('name', str), ('id', int)])
+Employee2 = tg.NamedTuple('Employee', [('name', str), ('id', int)])
+
+@tc.typecheck
+def foo_Employee(e: Employee):
+    pass
+
+def test_NamedTuple_OK():
+    foo_Employee(Employee(name="Jones", id=99))
+
+def test_NamedTuple_not_OK():
+    with expected(tc.InputParameterError("name=8, id=9)")):
+        foo_Employee(Employee(name=8, id=9))
+    with expected(tc.InputParameterError("'aaa')")):
+        foo_Employee(Employee(name='Jones', id='aaa'))
+    with expected(tc.InputParameterError("Employee2(name='Jones', id=999)")):
+        foo_Employee(Employee2(name='Jones', id=999))
 
 
 ############################################################################
 # Tuple
+
+@tc.typecheck
+def foo_Tuple_int_float_to_float(t: tg.Tuple[int, float]) -> float:
+    return t[1]
+
+def test_Tuple_OK():
+    assert foo_Tuple_int_float_to_float((2, 3.0)) == 3.0
+
+def test_Tuple_not_OK():
+    with expected(tc.InputParameterError("t: 2")):
+        foo_Tuple_int_float_to_float(2)
+    with expected(tc.InputParameterError("t: (2,)")):
+        foo_Tuple_int_float_to_float((2,))
+    with expected(tc.InputParameterError("t: (2, 3)")):
+        foo_Tuple_int_float_to_float((2, 3))
+    with expected(tc.InputParameterError("t: (2, 3.0, 4.0)")):
+        foo_Tuple_int_float_to_float((2, 3.0, 4.0))
 
 ############################################################################
 # Union,
@@ -290,7 +326,7 @@ def test_Iterable_Iterator_Container_content_not_OK_not_catchable():
 # Callable
 
 ############################################################################
-# the Protocols
+# _Protocol
 
 # is handled by TypeChecker without special code, so we do not test them all
 
@@ -341,6 +377,15 @@ def test_re_is_halfhearted():
         assert isinstance(re.match("regexp", "string"), tg.re.Match[str])
     with expected(error):
         assert isinstance(re.match(b"regexp", b"string"), tg.re.Match[bytes])
+
+############################################################################
+# 'MyClass' as str
+
+############################################################################
+
+
+############################################################################
+
 
 ############################################################################
 

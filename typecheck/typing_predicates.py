@@ -25,19 +25,22 @@ class GenericMetaChecker(fw.Checker):
         metaclass = type(self._cls)
         assert metaclass == tg.GenericMeta
         params = self._cls.__parameters__
+        result = True  # any failing check will set it to False
         # check checkable relevant properties of all
         # relevant Generic subclasses from the typing module:
-        if isinstance(value, tg.Sequence):
-            return self._check_sequence(value, params, namespace)
-        elif (isinstance(value, (tg.Mapping, tg.MappingView))):
-            return self._check_mapping(value, params, namespace)  # TODO: OK for all MappingViews?
-        elif isinstance(value, tg.AbstractSet):
-            return self._check_by_iterator(value, params, namespace)
+        if (isinstance(value, tg.Sequence) and
+                not self._check_sequence(value, params, namespace)):
+            result = False
+        if (isinstance(value, tg.Mapping) and
+                not self._check_mapping(value, params, namespace)):
+            result = False
+        if (isinstance(value, (tg.AbstractSet, tg.MappingView)) and
+                not self._check_by_iterator(value, params, namespace)):
+            result = False
         # tg.Iterable: nothing is checkable, see tg.Iterator
         # tg.Iterator: nothing is checkable: must not read, might be a generator
         # tg.Container: nothing is checkable: would need to guess elements
-        else:
-            return True
+        return result
 
     def _check_by_iterator(self, value, contenttypes, namespace):
         assert False  # TODO: implement _check_by_iterator
@@ -51,11 +54,11 @@ class GenericMetaChecker(fw.Checker):
         return tcp.sequence_of(contenttypes[0]).check(value, namespace)
         # TODO: move sequence content checking routine to fw
 
-fw.Checker.register(fw.is_GenericMeta_class, GenericMetaChecker, prepend=True)
+fw.Checker.register(fw._is_GenericMeta_class, GenericMetaChecker, prepend=True)
 
 
-def _is_typevar(something):
-    return type(something) == tg.TypeVar
+def _is_typevar(annotation):
+    return type(annotation) == tg.TypeVar
 
 class TypeVarChecker(fw.Checker):
     def __init__(self, typevar):
@@ -72,5 +75,46 @@ class TypeVarChecker(fw.Checker):
         # TODO: more informative error message, showing the TypeVar binding
 
 fw.Checker.register(_is_typevar, TypeVarChecker, prepend=True)
+
+
+def _is_tg_tuple(annotation):
+    return (inspect.isclass(annotation) and
+            issubclass(annotation, tg.Tuple) and
+            not type(annotation) == tuple)
+
+class TupleChecker(fw.FixedSequenceChecker):
+    def __init__(self, tg_tuple_class):
+        self._cls = tg_tuple_class
+        self._checks = tuple(fw.Checker.create(t) for t in self._cls.__tuple_params__)
+
+    # check() is inherited
+
+fw.Checker.register(_is_tg_tuple, TupleChecker, prepend=True)
+
+
+def _is_tg_namedtuple(annotation):
+    return (inspect.isclass(annotation) and
+            issubclass(annotation, tuple) and
+            getattr(annotation, "_field_types"))
+
+class NamedTupleChecker(fw.FixedSequenceChecker):
+    def __init__(self, tg_namedtuple_class):
+        self._cls = tg_namedtuple_class
+        self._checks = tuple(fw.Checker.create(self._cls._field_types[fn])
+                             for fn in self._cls._fields)
+
+    def check(self, value, namespace):
+        """
+        Attribute _field_types is a dict from field name to type.
+        """
+        if len(value) != len(self._cls._fields):
+            return False
+        for i, check in enumerate(self._checks):
+            if not check(value[i], namespace):
+                return False
+        return True
+
+# must be registered after TupleChecker (to be executed before it):
+fw.Checker.register(_is_tg_namedtuple, NamedTupleChecker, prepend=True)
 
 
