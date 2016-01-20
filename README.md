@@ -51,16 +51,17 @@ can be any constraint on the set of allowable values.
 For clarity, the recommended import style is as follows:
 
   ```Python
+  import typing as tg
   import typecheck as tc
   ```
 
 The remainder of this document will assume this import style.
-(Beware of ``import *`` , as there are functions any() and all() 
+(Beware of ``from typecheck import *`` , as there are functions any() and all() 
 that are likely to break your code then.)
 
 As for usage style, the idea of this package is not to approximate
 static type checking.
-Rather, you should use ``@tc.typecheck`` "where appropriate".
+Rather, you should use ``@tc.typecheck`` where appropriate ("gradual typing").
 Good examples for such situations might be:
 - You want to clarify your own thinking at module design time.
 - Some callers of your package tend to be careless or ignorant
@@ -72,7 +73,7 @@ Good examples for such situations might be:
   of legacy code.
 - You want to minimize non-code documentation.
 
-Some functions and methods will have annotations, many others will not.
+Some of your functions and methods will have annotations, many others will not.
 And even for decorated functions and methods, only a subset of their
 parameters may be annotated. Where appropriate.
 
@@ -114,14 +115,18 @@ some parameter PAR:
 - **``typing`` annotations.**
   The annotation is one of those defined in the module ``typing``.
   (This module was introduced in Python 3.5 and is available from 
-   PyPI for earlier Python 3 versions.)
+   PyPI for earlier Python 3 versions. 
+   We will subsequently often call it ``tg``.)
   This is a special case of 'Types' introduced above. 
   It requires special handling internally and provides extended possibilities
   externally (e.g. describing generic functions or specifying container
   types with particular content types in a manner possibly understood by 
   static type checking tools).
+  These are expected to become the standard over time because more tools
+  and more programmers will readily understand them than the proprietary
+  annotations.
 
-The following subsections explain each of them.
+The following subsections explain each of these annotation types.
 The same annotations are valid for function results (as opposed to parameters)
 as well.
 
@@ -129,7 +134,8 @@ as well.
 4.1 Types as annotations
 ------------------------
 
-The annotation is an expression for which ``inspect.isclass`` evaluates to True.
+The annotation is an expression for which ``inspect.isclass`` evaluates to True,
+but which is not from the ``tg`` module.
 
 Example:
 
@@ -142,10 +148,14 @@ Example:
 Instead of a type name, this could of course also be
 a function call returning a type
 or the name of a variable that holds a type.
+Such function calls will occur only once at function definition time.
+(Static type checkers may not understand them.)
 
 Meaning:
 If the annotation declares type ``T``, the argument ``x`` must fulfil
 ``isinstance(x, T)``, so objects from subclasses of T are acceptable as well.
+This same rule, that subclasses are also acceptable, holds for the other
+annotation types as well.
 
 
 4.2 Predicates as annotations
@@ -154,8 +164,8 @@ If the annotation declares type ``T``, the argument ``x`` must fulfil
 The annotation evaluates to a function (or in fact any callable)
 that will be called with the argument ``x`` supplied for parameter PAR
 as its only argument and must return a value that evaluates to
-  True (for an acceptable argument ``x``)
-  or False (for all other ``x``).
+  ``True`` (for an acceptable argument ``x``)
+  or ``False`` (for all other ``x``).
 
 Example:
 
@@ -170,6 +180,7 @@ Example:
 You can define your own predicate as shown above or use one of the
 predicate generators supplied with the package to create
 a predicate on the fly.
+(Static type checkers will usually not understand predicates.)
 
 
 4.3 Tuples and lists as annotations
@@ -181,8 +192,9 @@ more precisely, it can be any ``collections.Sequence`` object.
 This is a very pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in sequence types.
+(Static type checkers will usually not understand such annotations.)
 
-It is easiest explained by examples:
+This is easiest explained by examples:
 
    ```Python
    @tc.typecheck
@@ -233,6 +245,7 @@ every little data structure as a class
 but rather make heavy use of the built-in types.
 The annotation prescribes a fixed set of keys and a type for
 the value of each key. All keys must be present.
+(Static type checkers will usually not understand such annotations.)
 
 Examples:
 
@@ -265,40 +278,53 @@ of passing MyNTs as arguments).
 4.5 ``typing`` annotations
 --------------------------
 
-After the typecheck-decorator package existed for a while,
+After the typecheck-decorator package had existed for a while,
 Python 3.5 standardized a notation for type annotations via the
 new module ``typing``.
 That notation is supported here as well.
+If you do use an older version than Python 3.5, get the ``typing`` module
+from PyPI.
 
 If you only use typecheck-decorator, you can freely mix these new
 notation with the older notations described above.
 If you also want to apply other tools with your typechecking annotations
 (e.g. tools for static typechecking),
-you should restrict yourself to the notations described in Sections 4.1 and 4.5
-only.
+those will be more helpful if you restrict yourself to the notations 
+described in Sections 4.1 and 4.5 only.
 
 Examples:
 
    ```Python
    import typing as tg
    @tc.typecheck
-   def foo7(point:dict(x=int,y=int)): #!!!
+   def foo7(point: tg.Tuple[int, int]):
      pass
-   foo7(dict(x=1, y=2))         # OK
-   foo7({"x":1, "y":2})         # OK
-
+   foo7((4, 2))         # OK
+   foo7(None)           # Wrong, must use tg.Optional[tg.Tuple[int,int]]
+   foo7((4, 2, 0))      # Wrong
+   foo7((4, 2.0))       # Wrong
+   foo7((4, None))      # Wrong
    ```
 
-So far, the implementation of this support is incomplete.
-Only the following annotations are supported yet:
-!!!
-So far, type variables are not checked.
+See the following places for documentation and examples of the possibilities:
+- The API documentation of the ``typing`` module.
+- PEP 484
+- the file tc.test_tg_annotations.py
+However, so far the implementation of this support is not yet complete;
+see Section "Limitations" for the remaining gaps.
+If you have been using ``tc`` for a while already or if you prefer
+its proprietary notation over that of ``tg``, be aware that there is one
+feature in ``tg`` that is more powerful than previously available in ``tc``: 
+``tg.TypeVar`` (type variables).
+It is possible to mix standard ``tg`` and proprietary ``tg`` style annotations 
+freely, including type variables.
 
 
 5 Predicate generators
 ======================
 
-Annotating type names and fixed-length tuples does not get you very far,
+Annotating type names (other than those from ``tg``) and 
+fixed-length tuples does not get you very far,
 because
 - such an annotation will not accept ``None``;
 - wherever you use duck typing, your "type" is defined by a set
@@ -339,6 +365,7 @@ Allows all arguments that ``annot`` allows, plus ``None``:
    foo(None)      # Wrong: None does not have type int
    foo_opt(None)  # OK
    ```
+An equivalent alternative is ``tg.Optional[annot]``.
 
 **tc.hasattrs(*names)**:
 
@@ -406,6 +433,8 @@ of mistake.
    almost_ok += ["a"]
    foo_so(almost_ok)          # Wrong, but will fail only 0.25% of the time
    ```
+An equivalent alternative with fixed ``checkonly``
+is ``tg.Sequence[annot]``.
 
 **tc.list_of(annot, checkonly=4)**:
 
@@ -419,6 +448,8 @@ sequence to be a ``collections.MutableSequence``.
    foo_so(["a", "b"])         # OK
    foo_so(("a", "b"))         # Wrong: a tuple is not a MutableSequence
    ```
+An equivalent alternative with fixed ``checkonly``
+is ``tg.MutableSequence[annot]``.
 
 **tc.map_of(keys_annot, values_annot, checkonly=4)**:
 
@@ -441,6 +472,8 @@ In contrast to ``tc.seq_of``, this sample is not a variable random sample.
    foo(None)           # Wrong: None is not a dict
    foo({"1": "2"})     # Wrong: violates values_annot of arg and keys_annot of result
    ```
+An equivalent alternative with fixed ``checkonly``
+is ``tg.Mapping[annot]``.
 
 **tc.enum(*values)**:
 
@@ -499,6 +532,7 @@ You could think of it as an n-ary ``or``.
    foo_any("3")   # OK
    foo_any("4.0") # Wrong: not allowed by any of the three partial types
    ```
+An equivalent alternative is ``tg.Union[*annots]``.
 
 **tc.all(*annots)**:
 
@@ -573,6 +607,7 @@ but is much clearer.
    foo_any([[[[{"one":True}]]]]])  # OK
    foo_any(foo_any)          # OK
    ```
+An equivalent alternative is ``tg.Any``.
 
 
 **callable**
@@ -589,6 +624,9 @@ as a typechecking predicate.
    foo_callable(open)       # OK
    foo_callable("print")    # Wrong
    ```
+Once supported (so far it is not), a much more powerful alternative 
+for callables with fixed signatures will be
+``tg.Callable[[*argtype_annots], returntype_annot]``.
 
 
 5.3 Custom predicate generators
@@ -634,7 +672,8 @@ Here is an example:
 - Both of these are subclasses of  ``tc.TypeCheckError``.
 
 - If an annotation is used that does not fit into the categories
-  described above, a ``tc.TypeCheckSpecificationError`` will be raised.
+  described above, a ``tc.TypeCheckSpecificationError`` will be raised
+  at function definition time.
 
 
 7 Efficiency considerations
@@ -644,7 +683,7 @@ Here is an example:
 but actually Python is doing shiploads of similar things
 all the time.
 
-There are essentially only two cases where execution time might
+There are essentially two cases where execution time will
 become a real issue:
 - An annotation on a trivial function that is being
   called frequently in a tight loop.
@@ -655,45 +694,51 @@ become a real issue:
 Limitations
 ===========
 
-1. The decorated function will have a different signature:
-   Essentially, it is always ``(*args, **kwargs)``.
-   This will perhaps one day be changed by using the
-   ``decorator`` package or a similar technique.
-3. typing.Callable!!!
-4. Python 3 has no unbound methods anymore, therefore
-   binding of type variables to instances of a generic class ``C``
-   will only be recognized heuristically: The first parameter of 
-   each method ``m`` involved must be named ``self``.
-5. This module does not follow Section "The numeric tower"
-   of PEP 484, which suggests to accept ``int`` where ``float``
-   is annotated. For us, these two are (so far) considered
-   incompatible and you will need to annotate ``numbers.Float`` if
-   you want it mix them.
-6. Likewise, ``bytearray`` and ``memoryview`` are not currently
-   acceptable where ``bytes`` is declared; you currently need to
-   use ``tg.ByteString`` to mix those.
-7. PEP 484 forward references are not yet supported.
-   This will change in a future version.
-8. Contrary to PEP 484, a default argument value of ``None``
-   does not yet modify type ``X`` to become ``tg.Optional[X]``.
-9. Decorator ``@no_type_check`` is not yet supported.
-10. PEP 484 "type comments" are (obviously) not analyzed in any way.
-11. PEP 484 ``tg.cast`` does currently not check anything. 
+- So far, there is no support for 
+  - ``tg.Callable`` (*)
+  - PEP 484 forward references (*)
+  - ``tg.io`` (*)
+  - ``tg.re`` (*)
+  - decorator ``@tg.no_type_check``
+  - PEP 484 "type comments"
+  For those marked (*), support will follow in a future version.
+- Python 3 has no unbound methods anymore, therefore
+  binding of type variables to instances of a generic class ``C``
+  will only be recognized heuristically: The first parameter of 
+  each method ``m`` involved must be named ``self`` and
+  the first argument of stand-alone functions must not be named ``self``.
+- Contrary to PEP 484, a default argument value of ``None``
+  does not yet modify type ``X`` to become ``tg.Optional[X]``.
+- This module does not follow Section "The numeric tower"
+  of PEP 484, which suggests to accept ``int`` where ``float``
+  is annotated. For us, these two are (so far) considered
+  incompatible and you will need to annotate ``numbers.Float`` if
+  you want it mix them.
+- Likewise, ``bytearray`` and ``memoryview`` are not currently
+  acceptable where ``bytes`` is declared; you currently need to
+  use ``tg.ByteString`` to mix those.
+- PEP 484 ``tg.cast`` does currently not check anything. 
    (As long as the claim formulated by the cast
    is correct, this is sufficient.)
-12. The module does not read PEP 484 stub files.
+- The module does not read PEP 484 stub files.
    (Typechecking large parts of in particular the builtins
     would create performance problems anyway.)
-13. The module does not support the ``@overload`` decorator.
-   If ``@overload`` is used, only the last declaration executed for a name 
-   survives, whether it is decorated or not.
-14. The proprietary annotations described in Sections 4.2, 4.3, and 4.4
-   may have to be retired some day, so you should probably stop using them.
-   (Perhaps with the exception of a few particularly tasty uses that you
-    are willing to rework later on.)
-   See "What about existing uses of annotations?" in PEP 484.
-
-
+- The module does not support the ``@overload`` decorator.
+  If ``@overload`` is used, only the last declaration executed for a name 
+  survives, whether it is decorated or not.
+- The proprietary annotations described in Sections 4.2, 4.3, and 4.4
+  of the present document
+  do not currently conform to PEP 484, because they result in functions
+  rather than types; see "What about existing uses of annotations?" in PEP 484.
+  If you are not interested in static type checking, you can use them anyway.
+  A future version will likely convert them such that they result in types.
+- The ``@tc.typecheck`` decorator will effectively modify the Python-visible
+  signature of the decorated function:
+  Essentially, the resulting signature is always ``(*args, **kwargs)``.
+  This will perhaps one day be changed by using the
+  ``decorator`` package or a similar technique.
+- The exception messages should be more specific, e.g. for sequences and dicts
+  and in particular where type variable violations are involved.
 
 
 
@@ -769,11 +814,3 @@ Similar packages
 - ``threecheck`` is similar to typecheck-decorator in
   approach and expressiveness, except it has (as of v1.0)
   no support for the ``typing`` module.
-
-
-TO DO
-=====
-
-- use decorator package?
-- add more specialized exception messages, e.g. for sequences and dicts
-  and in particular where type variable violations are involved
