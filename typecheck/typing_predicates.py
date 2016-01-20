@@ -107,7 +107,8 @@ class NamedTupleChecker(fw.FixedSequenceChecker):
         """
         Attribute _field_types is a dict from field name to type.
         """
-        if len(value) != len(self._cls._fields):
+        if (not issubclass(type(value), self._cls) or
+            len(value) != len(self._cls._fields)):
             return False
         for i, check in enumerate(self._checks):
             if not check(value[i], namespace):

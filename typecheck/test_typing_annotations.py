@@ -275,7 +275,7 @@ def test_Iterable_Iterator_Container_content_not_OK_not_catchable():
 # NamedTuple
 
 Employee = tg.NamedTuple('Employee', [('name', str), ('id', int)])
-Employee2 = tg.NamedTuple('Employee', [('name', str), ('id', int)])
+Employee2 = tg.NamedTuple('Employee2', [('name', str), ('id', int)])
 
 @tc.typecheck
 def foo_Employee(e: Employee):
