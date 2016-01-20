@@ -1,3 +1,4 @@
+import builtins
 import datetime as dt
 import io
 import re
@@ -308,22 +309,73 @@ def test_Tuple_not_OK():
         foo_Tuple_int_float_to_float(2)
     with expected(tc.InputParameterError("t: (2,)")):
         foo_Tuple_int_float_to_float((2,))
+    with expected(tc.InputParameterError("t: (2, None)")):
+        foo_Tuple_int_float_to_float((2, None))
+    with expected(tc.InputParameterError("t: None")):
+        foo_Tuple_int_float_to_float(None)
     with expected(tc.InputParameterError("t: (2, 3)")):
         foo_Tuple_int_float_to_float((2, 3))
     with expected(tc.InputParameterError("t: (2, 3.0, 4.0)")):
         foo_Tuple_int_float_to_float((2, 3.0, 4.0))
 
 ############################################################################
-# Union,
+# Union
 
-############################################################################
-# Any,
+@tc.typecheck
+def foo_Union_int_SequenceFloat(u: tg.Union[int, tg.Sequence[float]]):
+    pass
+
+def test_Union_OK():
+    foo_Union_int_SequenceFloat(4)
+    foo_Union_int_SequenceFloat([])
+    foo_Union_int_SequenceFloat([4.0, 5.0])
+
+def test_Union_not_OK():
+    with expected(tc.InputParameterError("u: wrong")):
+        foo_Union_int_SequenceFloat("wrong")
+    with expected(tc.InputParameterError("u: [4]")):
+        foo_Union_int_SequenceFloat([4])
+    with expected(tc.InputParameterError("u: None")):
+        foo_Union_int_SequenceFloat(None)
 
 ############################################################################
 # Optional
 
+# needs no implementation code, all work is done by tg itself
+
+@tc.typecheck
+def foo_Optional_Union_int_SequenceFloat(u: tg.Optional[tg.Union[int, tg.Sequence[float]]]):
+    pass
+
+def test_Optional_OK():
+    foo_Optional_Union_int_SequenceFloat(None)
+    foo_Optional_Union_int_SequenceFloat(4)
+    foo_Optional_Union_int_SequenceFloat([])
+    foo_Optional_Union_int_SequenceFloat([4.0, 5.0])
+
+def test_Optional_not_OK():
+    with expected(tc.InputParameterError("u: wrong")):
+        foo_Optional_Union_int_SequenceFloat("wrong")
+    with expected(tc.InputParameterError("u: [4]")):
+        foo_Optional_Union_int_SequenceFloat([4])
+
 ############################################################################
 # Callable
+
+@tc.typecheck
+def foo_Callable(func: tg.Callable):
+    pass
+
+@pytest.mark.skipif(True, reason="I have no idea what's the problem here.")
+def test_Callable_OK():
+    assert callable(foo_Callable)
+    foo_Callable(lambda: foo_Callable)
+    foo_Callable(lambda x: 2*x)
+    foo_Callable(builtins.callable)
+    foo_Callable(builtins.dict)
+    foo_Callable(builtins.len)
+    foo_Callable(foo_Callable)
+
 
 ############################################################################
 # _Protocol
@@ -346,6 +398,8 @@ def test_SupportsAbs_not_OK():
 ############################################################################
 # io
 
+# tg.io appears to be hardly useful as of 3.5
+
 def test_io_is_halfhearted():
     """
     It would be pythonic if tg.io.IO applied to all file-like objects.
@@ -362,6 +416,8 @@ def test_io_is_halfhearted():
 
 ############################################################################
 # re
+
+# tg.io appears to be broken as of 3.5
 
 def test_re_is_halfhearted():
     """
@@ -381,12 +437,31 @@ def test_re_is_halfhearted():
 ############################################################################
 # 'MyClass' as str
 
+class A:
+    @tc.typecheck
+    def foo_something(self, another: 'A') -> 'A':
+        return self
+
+
+@pytest.mark.skipif(True, reason="not yet implemented")
+def test_forward_reference_OK():
+    a1 = A()
+    a2 = A()
+    a1.foo_something(a2)
+
+@pytest.mark.skipif(True, reason="not yet implemented")
+def test_forward_reference_not_OK():
+    a1 = A()
+    a1.foo_something("something completely different")
+
 ############################################################################
+# and last of all: Any
 
+@tc.typecheck
+def foo_Any(x: tg.Any) -> tg.Any:
+    return x
+
+def test_Any_OK():
+    assert foo_Any(42)
 
 ############################################################################
-
-
-############################################################################
-
-#test_Iterable_Iterator_Container_content_not_OK_not_catchable()

@@ -97,7 +97,7 @@ def _is_tg_namedtuple(annotation):
             issubclass(annotation, tuple) and
             getattr(annotation, "_field_types"))
 
-class NamedTupleChecker(fw.FixedSequenceChecker):
+class NamedTupleChecker(fw.Checker):
     def __init__(self, tg_namedtuple_class):
         self._cls = tg_namedtuple_class
         self._checks = tuple(fw.Checker.create(self._cls._field_types[fn])
@@ -117,5 +117,60 @@ class NamedTupleChecker(fw.FixedSequenceChecker):
 
 # must be registered after TupleChecker (to be executed before it):
 fw.Checker.register(_is_tg_namedtuple, NamedTupleChecker, prepend=True)
+
+
+def _is_tg_union(annotation):
+    return issubclass(annotation, tg.Union)
+
+class UnionChecker(fw.Checker):
+    def __init__(self, tg_union_class):
+        self._cls = tg_union_class
+        self._checks = tuple(fw.Checker.create(p) for p in self._cls.__union_params__)
+
+    def check(self, value, namespace):
+        """
+        Attribute _field_types is a dict from field name to type.
+        """
+        for i, check in enumerate(self._checks):
+            if check(value, namespace):
+                return True
+        return False
+
+# must be registered after TupleChecker (to be executed before it):
+fw.Checker.register(_is_tg_union, UnionChecker, prepend=True)
+
+
+def _is_string(annotation):
+    return type(annotation) == str
+
+class TypeNameChecker(fw.Checker):
+    def __init__(self, typename):
+        self._typename = typename
+
+    def check(self, value, namespace):
+        raise fw.TypeCheckSpecificationError("PEP 484 forward references are not yet implemented")
+        return False
+
+# Should be the second type registered, because strings are sequences so that
+# FixedTupleChecker is keen to intervene.
+fw.Checker.register(_is_string, TypeNameChecker, prepend=True)
+
+
+########## and finally:
+
+def _is_tg_any(annotation):
+    return annotation == tg.Any
+
+class AnyChecker(fw.Checker):
+    def __init__(self, tg_any_class):
+        self._cls = tg_any_class
+
+    def check(self, value, namespace):
+        return True
+
+# Must be the very first type registered, because issubclass(Any, Xtype)
+# is always true, so every other predicate would also react to an Any
+# annotation but its checker will often make assumptions that are incorrect.
+fw.Checker.register(_is_tg_any, AnyChecker, prepend=True)
 
 
