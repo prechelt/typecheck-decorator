@@ -148,8 +148,8 @@ class TypeNameChecker(fw.Checker):
         self._typename = typename
 
     def check(self, value, namespace):
-        raise fw.TypeCheckSpecificationError("PEP 484 forward references are not yet implemented")
-        return False
+        return type(value).__name__ == self._typename
+        # TODO: handle complex forward references such as 'mymodule.MyClass'
 
 # Should be the second type registered, because strings are sequences so that
 # FixedTupleChecker is keen to intervene.

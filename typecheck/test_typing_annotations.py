@@ -442,17 +442,27 @@ class A:
     def foo_something(self, another: 'A') -> 'A':
         return self
 
-
-@pytest.mark.skipif(True, reason="not yet implemented")
 def test_forward_reference_OK():
     a1 = A()
     a2 = A()
     a1.foo_something(a2)
 
-@pytest.mark.skipif(True, reason="not yet implemented")
+def test_forward_reference_to_local_class_OK_or_not_OK():
+    class B:
+        @tc.typecheck
+        def foo_something(self, another: 'B') -> 'B':
+            return self
+    b1 = B()
+    b2 = B()
+    b1.foo_something(b2)
+    with expected(tc.InputParameterError("something different")):
+        b1.foo_something("something different")
+
+
 def test_forward_reference_not_OK():
     a1 = A()
-    a1.foo_something("something completely different")
+    with expected(tc.InputParameterError("something different")):
+        a1.foo_something("something different")
 
 ############################################################################
 # and last of all: Any

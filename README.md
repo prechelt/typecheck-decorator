@@ -232,6 +232,7 @@ named tuples as arguments for methods having Sequence annotations without
 problem.
 Do not use a named tuple for an annotation, though, because its names
 will be ignored, which is confusing and error-prone.
+You can use a namedtuple type as an annotation without problems.
 
 
 4.4 Dictionaries as annotations
@@ -696,7 +697,6 @@ Limitations
 
 - So far, there is no support for 
   - ``tg.Callable`` (*)
-  - PEP 484 forward references (*)
   - ``tg.io`` (*)
   - ``tg.re`` (*)
   - decorator ``@tg.no_type_check``
@@ -709,6 +709,17 @@ Limitations
   the first argument of stand-alone functions must not be named ``self``.
 - Contrary to PEP 484, a default argument value of ``None``
   does not yet modify type ``X`` to become ``tg.Optional[X]``.
+- PEP 484 forward references must so far use simple names 
+  (such as ``'MyClass'``),
+  not qualified ones (such as ``'mymodule.MyClass'``).
+  The class thus referenced may live wherever it pleases.
+  The forward reference string needs not be evaluable at the point
+  of the checked function call.
+  Types are checked by name comparison, not by evaluation.
+  This means an argument of the wrong type will pass the check if 
+  that wrong type has the same base name as the intended type.
+  Support for qualified names may or may not be added in a future version.
+  Checking by evaluation may or may not be added in a future version.
 - This module does not follow Section "The numeric tower"
   of PEP 484, which suggests to accept ``int`` where ``float``
   is annotated. For us, these two are (so far) considered
