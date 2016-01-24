@@ -4,7 +4,7 @@
 # (c) 2014-2016 Lutz Prechelt
 # Distributed under BSD license.
 
-__version__ = "2.0"
+__version__ = "1.3"
 
 from .framework import (TypeCheckError, InputParameterError, ReturnValueError,
                         TypeCheckSpecificationError,

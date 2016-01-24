@@ -46,7 +46,7 @@ setup(
     # basic information:
     name=package_name,
     version=find_version('typecheck', '__init__.py'),
-    description="flexible explicit type checking of function arguments (Python3-only)",
+    description="flexible explicit run-time type checking of function arguments (Python3-only)",
     long_description=get_file_contents("README.rst"),
 
     # The project URL:

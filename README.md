@@ -1,6 +1,6 @@
 typecheck-decorator
 ===================
-Lutz Prechelt, 2014
+Lutz Prechelt, 2014-2016, for Version 1.3
 
 A decorator for functions, `@tc.typecheck`, to be used together with
 Python3 annotations on function parameters and function results.
@@ -232,7 +232,7 @@ named tuples as arguments for methods having Sequence annotations without
 problem.
 Do not use a named tuple for an annotation, though, because its names
 will be ignored, which is confusing and error-prone.
-You can use a namedtuple type as an annotation without problems.
+(You can use a namedtuple type as an annotation without problems.)
 
 
 4.4 Dictionaries as annotations
@@ -257,23 +257,10 @@ Examples:
    foo6(dict(x=1, y=2))         # OK
    foo6({"x":1, "y":2})         # OK
    foo6(collections.UserDict(x=1, y=2))  # OK
-   MyNT = collections.namedtuple("MyNT", ["x","y"])
-   foo6(MyNT(x=1, y=2))         # OK, see discussion below
    foo6(dict(x=1))              # Wrong: key y is missing
    foo6(dict(x=1, y="huh?"))    # Wrong: type error for y
    foo6(dict(x=1, y=2, z=10))   # Wrong: key z is not allowed
    ```
-
-Although ``collections.namedtuple`` classes produce objects that are
-Sequences, not Mappings, you can pass them as arguments to Mapping-annotated
-parameters; they will be interpreted as dictionaries by the typechecks.
-Never use a named tuple for an annotation, though, because that will
-create a Sequence annotation (not a Mapping annotation) and its names
-will be ignored, which is confusing and error-prone.
-If you want to annotate the use of named tuples, use something like
-``tc.all(MyNT, dict(x=int, y=int))`` (as explained below) or
-``MyNT(x=int, y=int).__dict__`` (which is a dictionary but shows the intent
-of passing MyNTs as arguments).
 
 
 4.5 ``typing`` annotations
@@ -707,8 +694,18 @@ Limitations
   will only be recognized heuristically: The first parameter of 
   each method ``m`` involved must be named ``self`` and
   the first argument of stand-alone functions must not be named ``self``.
+- Type variables can only be bound to types, not to type checking predicates.
+- There is a bug in the combination of at least Python 3.4 with
+  PyPI typing 3.5.0.1 that makes e.g. ``issubclass(tg.Iterable, tg.Generic)``
+  false (on the other hand, ``issubclass(tg.Sequence, tg.Iterable)`` is true
+  as it should). 
+  The full implications for type checking Generics are unclear,
+  expect some Generics type checks to go wrong in this configuration.
+- !!!(not thread-safe)
 - Contrary to PEP 484, a default argument value of ``None``
-  does not yet modify type ``X`` to become ``tg.Optional[X]``.
+  does not yet modify type ``X`` to become ``tg.Optional[X]``
+  (although using ``tg.get_type_hints()`` for the implementation would 
+  purportedly make that easy).
 - PEP 484 forward references must so far use simple names 
   (such as ``'MyClass'``),
   not qualified ones (such as ``'mymodule.MyClass'``).
@@ -799,9 +796,12 @@ Version history
   - FIX: added checking for non-kwonlyargs named arguments
   - cut the implementation and tests into several pieces
   
-- **2.0**:
+- **1.3**:
   - introduces support for annotations according to the Python 3.5
-    ``typing`` module.
+    ``typing`` module; see Sections 4.5 and "Limitations"
+  - an awkward exception rule has been dropped:
+    you can no longer pass a ``collections.namedtuple`` value
+    to an argument annotated with a fixed mapping.
 
 
 Further contributors
