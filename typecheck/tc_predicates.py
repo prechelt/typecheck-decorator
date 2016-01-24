@@ -6,10 +6,6 @@ import re as regex_module
 import typecheck.framework as fw
 
 
-def isnamedtuple(annotation):
-    return isinstance(annotation, tuple) and ismapping(annotation.__dict__)
-
-
 def ismapping(annotation):
     return isinstance(annotation, collections.Mapping)
 
@@ -20,9 +16,6 @@ class FixedMappingChecker(fw.Checker):
                         for key, val in the_mapping.items()}
 
     def check(self, themap, namespace):
-        if isnamedtuple(themap):
-            themap = vars(themap)
-            assert ismapping(themap)
         if not ismapping(themap) or len(themap) != len(self._checks):
             return False
         for key, value in themap.items():

@@ -13,6 +13,29 @@ import typecheck as tc
 import typecheck.framework as fw
 from typecheck.testhelper import expected
 
+# global TypeVars, used in various places:
+
+X = tg.TypeVar('X')
+Tb = tg.TypeVar('Tb', bound=dt.date)
+Tc = tg.TypeVar('Tc', str, bytes)
+
+
+############################################################################
+# the typing module as such:
+
+def test_typing_module_weirdness():
+    # This was a Py3.4 bug in typing 3.5.0.1:
+    assert issubclass(tg.Iterable, tg.Generic) == (sys.version_info >= (3,5))
+    # ItemsView comes out with three parameters:
+    # one (T_co) from Iterable (via MappingView),
+    # two (KT, VT_co) from Generic.
+    # T_co must in fact be Tuple[KT, VT_co], but how would we know that?
+    # Three parameters makes no sense; this is a mess.
+    assert tg.ItemsView.__parameters__ == (tg.T_co, tg.KT, tg.VT_co)
+    # This is an assumption in GenericMetaChecker._can_have_instance:
+    assert not issubclass(tg.Sequence[X], tg.Iterable[X]) # very strange!
+
+
 ############################################################################
 # Generic type with fixed content type
 
@@ -63,7 +86,6 @@ def test_TypeVarNamespace_without_instance():
             assert ns.is_compatible(X, B)
 
 
-X = tg.TypeVar('X')  # global type variable, used in various places
 @tc.typecheck
 def foo_Sequence_X_to_Sequence_X(xs: tg.Sequence[X], x: X) -> tg.Sequence[X]:
     xs.append(x)
@@ -78,7 +100,7 @@ def test_Sequence_X_int_notOK():
         foo_Sequence_X_to_Sequence_X([1, 2], "a_string")
 
 ############################################################################
-# Generic class with TypeVar binding on the instance level
+# TypeVarNamespace, Generic class with TypeVar binding on the instance level
 
 class MyGeneric(tg.Generic[X]):
     def __init__(self, initial_element=None):
@@ -137,8 +159,6 @@ def test_MyGeneric_OK_and_not_OK():
 ############################################################################
 # type variable with bound or constraint
 
-Tb = tg.TypeVar('Tb', bound=dt.date)
-
 @tc.typecheck
 def foo_with_bound(date1: Tb, date2: Tb):
     pass
@@ -160,8 +180,6 @@ def test_TypeVar_bound_violated():
         foo_with_bound(object(), object())  # above the bound
 
 
-Tc = tg.TypeVar('Tc', str, bytes)
-
 @tc.typecheck
 def foo_with_constraint(date1: Tc, date2: Tc):
     pass
@@ -178,7 +196,17 @@ def test_TypeVar_constraint_not_OK():
 
 
 ############################################################################
-# Other tg generic classes
+# Generic classes subclass relationship:
+
+def test_GenericMetaChecker_dot_can_have_subclass():
+    Ch = tc.typing_predicates.GenericMetaChecker  # class alias
+    assert Ch(tg.Sequence[int])._is_possible_subclass(list, tg.Sequence[int])
+    assert not Ch(tg.Sequence[int])._is_possible_subclass(int, tg.Sequence[int])
+    assert Ch(tg.Iterable[int])._is_possible_subclass(tg.Sequence[int], tg.Iterable[int])
+
+
+############################################################################
+# Mapping, Set, MappingView
 
 @tc.typecheck
 def foo_Mapping_str_float_to_float(m: tg.Mapping[str,float], k: str) -> float:
@@ -194,12 +222,44 @@ def test_Mapping_str_float_not_OK():
         assert foo_Mapping_str_float_to_float({b'a':4.0}, b"a") == 4.0
 
 
-############################################################################
-# for Iterable, Iterator, Container we cannot check the actual content
+@tc.typecheck
+def foo_Set_Tc_Tc_to_bool(s: tg.Set[Tc], el: Tc) -> bool:
+    return el in s
+
+def test_Set_Tc_OK():
+    assert foo_Set_Tc_Tc_to_bool(set(("yes","maybe")), "yes")
+    assert not foo_Set_Tc_Tc_to_bool(set(("yes","maybe")), "no")
+    assert foo_Set_Tc_Tc_to_bool(set((b"yes",b"maybe")), b"yes")
+
+def test_Set_Tc_not_OK():
+    with expected(tc.InputParameterError("")):
+        assert foo_Set_Tc_Tc_to_bool(set(("yes",b"maybe")), "yes")
+    with expected(tc.InputParameterError("")):
+        assert foo_Set_Tc_Tc_to_bool(set((1, 2)), 2)
+    with expected(tc.InputParameterError("")):
+        assert foo_Set_Tc_Tc_to_bool(set((("yes",),("maybe",))), ("yes",))
+
 
 @tc.typecheck
-def foo_Iterable(i: tg.Iterable[float]):
-    pass
+def foo_KeysView_to_Sequence(v: tg.KeysView[Tc]) -> tg.Sequence[Tc]:
+    result = [item for item in v]
+    result.sort()
+    assert len([item for item in v]) == len(result)  # iterable not exhausted
+    return result
+
+@pytest.mark.skipif(True, reason="not yet implemented")
+def test_KeysView_to_Sequence_OK():
+    assert foo_KeysView_to_Sequence(dict(a=11, b=12).keys()) == ['a', 'b']
+    assert foo_KeysView_to_Sequence({b'A':11, b'B':12}.keys()) == [b'A', b'B']
+
+@pytest.mark.skipif(True, reason="not yet implemented")
+def test_KeysView_to_Sequence_not_OK():
+    with expected(tc.InputParameterError("v: dict_keys\(.*3.*")):
+        assert foo_KeysView_to_Sequence({b'A':11, b'B':12, 3:13}.keys()) == [b'A', b'B', 13]
+
+
+############################################################################
+# for Iterator and Container we cannot check the actual content
 
 @tc.typecheck
 def foo_Iterator(i: tg.Iterator[dt.date]):
@@ -214,30 +274,29 @@ def test_Iterable_Iterator_Container_OK():
     No extra code is needed to check Iterable, Iterator, and Container,
     because there is no suitable way to access their contents.
     """
-    foo_Iterable([4.0, 5.0])
     foo_Iterator((dt.date.today(), dt.date.today()).__iter__())
     foo_Container([["nested", "list"], ["of", "strings"]])
 
-def test_Iterable_Container_content_not_OK_catchable():
+def test_Iterator_Container_content_not_OK_catchable():
     """
     Because there is no suitable way to access their contents,
     such generic types may still pass the typecheck if their content is
     of the wrong type.
     This is a fundamental problem, not an implementation gap.
     The only cases where improper contents will be caught is when the argument
-    is also of a more specific generic type: Sequence, Mapping, AbstractSet
+    is _also_ tg.Iterable.
     """
-    with expected(tc.InputParameterError("shouldn't be")):
-        foo_Iterable(["shouldn't be", "strings here"])
+    with expected(tc.InputParameterError("list_iterator")):
+        foo_Iterator(["shouldn't be", "strings here"].__iter__())
     with expected(tc.InputParameterError("3, 4")):
         foo_Container([[3, 4], [5, 6]])
 
 def test_Iterator_totally_not_OK():
     with expected(tc.InputParameterError("")):
-        foo_Iterator((dt.date.today(), dt.date.today()))  # lacks .__iter__()
+        foo_Iterator((dt.date.today(), dt.date.today()))  # lacks .__next__()
 
 
-class MySpecialtyGeneric(tg.Iterable[X], tg.Container[X]):
+class MySpecialtyGeneric(tg.Container[X]):
     def __init__(self, contents):
         assert isinstance(contents, tg.Sequence)
         self.contents = contents  # an 'nice' container, but hidden within
@@ -250,26 +309,14 @@ class MySpecialtyGeneric(tg.Iterable[X], tg.Container[X]):
 def foo_MySpecialtyGeneric(c: MySpecialtyGeneric[float]):
     pass
 
-@pytest.mark.skipif(sys.version_info < (3,5),
-                    reason="bug in typing 3.5.0.1 w.r.t Iterable")
-def test_Iterable_Iterator_Container_content_not_OK_not_catchable():
+def test_Container_content_not_OK_not_catchable():
     """
     See above: With generics that are not otherwise checkable,
     wrong contents will not be detected.
     """
-    assert issubclass(tg.Iterable, tg.Generic)  # bug in typing 3.5.0.1 gone?
     incorrect_content = MySpecialtyGeneric(["shouldn't be", "strings here"])
-    foo_Iterable(incorrect_content)  # cannot detect
     foo_Container(incorrect_content)  # cannot detect
     foo_MySpecialtyGeneric(incorrect_content)  # cannot detect
-
-############################################################################
-
-
-############################################################################
-
-
-############################################################################
 
 
 ############################################################################
@@ -367,7 +414,7 @@ def foo_Callable(func: tg.Callable):
     pass
 
 @pytest.mark.skipif(True, reason="I have no idea what's the problem here.")
-def test_Callable_OK():
+def test_Callable_OK():  # TODO: What's going wrong here?
     assert callable(foo_Callable)
     foo_Callable(lambda: foo_Callable)
     foo_Callable(lambda x: 2*x)
@@ -475,3 +522,8 @@ def test_Any_OK():
     assert foo_Any(42)
 
 ############################################################################
+
+#test_Mapping_str_float_OK()
+test_Set_Tc_not_OK()
+#test_GenericMetaChecker_dot_can_have_subclass()
+#test_Iterable_Iterator_Container_content_not_OK_not_catchable()

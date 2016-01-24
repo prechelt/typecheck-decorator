@@ -1,3 +1,4 @@
+import copy
 import inspect
 import typing as tg
 
@@ -19,31 +20,62 @@ class GenericMetaChecker(fw.Checker):
         self._cls = tg_class
 
     def check(self, value, namespace):
-        if not isinstance(value, self._cls):
+        if not self._is_possible_subclass(type(value), self._cls):
             return False  # totally the wrong type
-        # now check the content of the container, if possible:
-        metaclass = type(self._cls)
-        assert metaclass == tg.GenericMeta
+        # now check the content of the value, if possible:
+        assert type(self._cls) == tg.GenericMeta
         params = self._cls.__parameters__
         result = True  # any failing check will set it to False
         # check checkable relevant properties of all
-        # relevant Generic subclasses from the typing module:
-        if (isinstance(value, tg.Sequence) and
-                not self._check_sequence(value, params, namespace)):
-            result = False
-        if (isinstance(value, tg.Mapping) and
-                not self._check_mapping(value, params, namespace)):
-            result = False
-        if (isinstance(value, (tg.AbstractSet, tg.MappingView)) and
-                not self._check_by_iterator(value, params, namespace)):
-            result = False
-        # tg.Iterable: nothing is checkable, see tg.Iterator
-        # tg.Iterator: nothing is checkable: must not read, might be a generator
+        # relevant Generic subclasses from the typing module.
+        # Fall back from specific to less specific leave the content
+        # check out if there are more __parameters__ than expected:
+        if (self._we_want_to_check(value, tg.Sequence)):
+            return self._check_sequence(value, params, namespace)
+        if (self._we_want_to_check(value, tg.Mapping)):
+            return self._check_mapping(value, params, namespace)
+        if (self._we_want_to_check(value, tg.Iterable)):
+            return self._check_by_iterator(value, params, namespace)
+        # tg.Iterator: nothing is checkable: reading would modify it
         # tg.Container: nothing is checkable: would need to guess elements
-        return result
+        return True  # no content checking possible
+
+    def _is_possible_subclass(self, subtype, supertype):
+        """
+        Like issubclass(subtype, supertype) except that TypeVars
+        are not taken into account.
+        """
+        subparams = getattr(subtype, "__parameters__", None)
+        if subparams is None:
+            return issubclass(subtype, supertype)  # a non-generic actual type
+        # It is surprisingly difficult to ignore the type variables in a
+        # subclass check. We therefore compare __name__ (along mro) only.
+        # This can produce false positives in principle.
+        # (previous "nullify __parameters__" logic deleted 2016-01-24 14:52)
+        for subtype_super in subtype.mro():
+            if subtype_super.__name__ == supertype.__name__:
+                # squeeze your thumbs this is not just by accident
+                return True  # TODO: ensure __parameters__ are compatible
+        return False  # _cls not found as superclass
+
+    def _we_want_to_check(self, value, checkable_class):
+        num_parameters = len(checkable_class.__parameters__)
+        annotation_is_more_special = self._is_possible_subclass(self._cls, checkable_class)
+        annotation_is_less_special = self._is_possible_subclass(checkable_class, self._cls)
+        annotation_is_related = (annotation_is_more_special or annotation_is_less_special)
+        return (isinstance(value, checkable_class) and
+                annotation_is_related and
+                len(self._cls.__parameters__) == num_parameters)
 
     def _check_by_iterator(self, value, contenttypes, namespace):
-        assert False  # TODO: implement _check_by_iterator
+        assert len(contenttypes) == 1
+        checker = fw.Checker.create(contenttypes[0])
+        for i, nextvalue in enumerate(value):
+            if not checker(nextvalue, namespace):
+                return False
+            if i+1 == 4:  # TODO: make check-amount configurable
+                return True  # enough checks done
+        return True  # if shorter than check amount
 
     def _check_mapping(self, value, contenttypes, namespace):
         assert len(contenttypes) == 2
@@ -172,5 +204,3 @@ class AnyChecker(fw.Checker):
 # is always true, so every other predicate would also react to an Any
 # annotation but its checker will often make assumptions that are incorrect.
 fw.Checker.register(_is_tg_any, AnyChecker, prepend=True)
-
-

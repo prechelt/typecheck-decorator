@@ -98,20 +98,6 @@ def test_FixedMappingChecker_dict():
         assert foo(dict(b="hugo")) == 4
 
 
-def test_FixedMappingChecker_namedtuple():
-    Mynt = collections.namedtuple("MyNT", "a b")
-
-    @tc.typecheck
-    def foo1(arg: dict(a=int, b=str)):
-        if isinstance(arg, tuple):
-            return arg.a + len(arg.b)
-        else:
-            return arg["a"] + len(arg["b"])
-
-    assert foo1(Mynt(a=1, b="hugo")) == 5
-    assert foo1(dict(a=1, b="hugo")) == 5
-
-
 def test_CallableChecker1():
     @tc.typecheck
     def foo(a: callable, *, k: callable) -> callable:
