@@ -175,7 +175,7 @@ def test_TypeVar_bound_OK_mixed_classes():
 
 def test_TypeVar_bound_violated():
     with (expected(tc.InputParameterError(""))):
-        foo_with_bound(1, 2)  # both same type, but now below the bound
+        foo_with_bound(1, 2)  # both same type, but not below the bound
     with (expected(tc.InputParameterError(""))):
         foo_with_bound(object(), object())  # above the bound
 
@@ -247,12 +247,10 @@ def foo_KeysView_to_Sequence(v: tg.KeysView[Tc]) -> tg.Sequence[Tc]:
     assert len([item for item in v]) == len(result)  # iterable not exhausted
     return result
 
-@pytest.mark.skipif(True, reason="not yet implemented")
 def test_KeysView_to_Sequence_OK():
     assert foo_KeysView_to_Sequence(dict(a=11, b=12).keys()) == ['a', 'b']
     assert foo_KeysView_to_Sequence({b'A':11, b'B':12}.keys()) == [b'A', b'B']
 
-@pytest.mark.skipif(True, reason="not yet implemented")
 def test_KeysView_to_Sequence_not_OK():
     with expected(tc.InputParameterError("v: dict_keys\(.*3.*")):
         assert foo_KeysView_to_Sequence({b'A':11, b'B':12, 3:13}.keys()) == [b'A', b'B', 13]
@@ -416,6 +414,7 @@ def foo_Callable(func: tg.Callable):
 @pytest.mark.skipif(True, reason="I have no idea what's the problem here.")
 def test_Callable_OK():  # TODO: What's going wrong here?
     assert callable(foo_Callable)
+    # Not even one of the following works:
     foo_Callable(lambda: foo_Callable)
     foo_Callable(lambda x: 2*x)
     foo_Callable(builtins.callable)
@@ -511,6 +510,42 @@ def test_forward_reference_not_OK():
     with expected(tc.InputParameterError("something different")):
         a1.foo_something("something different")
 
+
+############################################################################
+# A complex example
+
+ComplexType = tg.Union[tg.Optional[tg.Sequence[tg.Mapping[Tc, tg.Optional[float]]]],
+                       Tc, bool, dt.date]
+
+@tc.typecheck
+def foo_wow_thats_nested(x: ComplexType) -> tg.Union[Tc, bool, float]:
+    if isinstance(x, (str, bytes)):
+        return x[0:3]
+    elif isinstance(x, tg.Sequence):
+        return x[0][sorted(x[0].keys())[0]]
+    else:
+        return x
+
+def test_complex_example_OK():
+    assert foo_wow_thats_nested(True) == True
+    assert foo_wow_thats_nested('string') == 'str'
+    assert foo_wow_thats_nested(b'bytes') == b'byt'
+    assert foo_wow_thats_nested([dict(a=1.0, b=2.0)]) == 1.0
+    assert foo_wow_thats_nested([{b'a':1.0, b'1':2.0}]) == 2.0
+
+def test_complex_example_not_OK():
+    with expected(tc.InputParameterError("1")):
+        assert foo_wow_thats_nested(1) == 1
+    with expected(IndexError("")):
+        foo_wow_thats_nested([])
+    with expected(tc.ReturnValueError("")):
+        assert foo_wow_thats_nested(None) == None
+    with expected(tc.ReturnValueError("")):
+        assert foo_wow_thats_nested(dt.date.today()) == dt.date.today()
+    with expected(tc.ReturnValueError("None")):
+        assert foo_wow_thats_nested([dict(a=None, b=2.0)]) == None
+
+
 ############################################################################
 # and last of all: Any
 
@@ -522,8 +557,3 @@ def test_Any_OK():
     assert foo_Any(42)
 
 ############################################################################
-
-#test_Mapping_str_float_OK()
-test_Set_Tc_not_OK()
-#test_GenericMetaChecker_dot_can_have_subclass()
-#test_Iterable_Iterator_Container_content_not_OK_not_catchable()
