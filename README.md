@@ -304,7 +304,8 @@ If you have been using ``tc`` for a while already or if you prefer
 its proprietary notation over that of ``tg``, be aware that there is one
 feature in ``tg`` that is more powerful than previously available in ``tc``: 
 ``tg.TypeVar`` (type variables).
-It is possible to mix standard ``tg`` and proprietary ``tg`` style annotations 
+It is presumably (I have not tested this much, so there may be gaps)
+possible to mix standard ``tg`` and proprietary ``tg`` style annotations 
 freely, including type variables.
 
 
@@ -682,7 +683,7 @@ become a real issue:
 Limitations
 ===========
 
-- So far, there is no support for 
+- There is currently no support for 
   - ``tg.Callable`` (*)
   - ``tg.io`` (*)
   - ``tg.re`` (*)
@@ -695,13 +696,37 @@ Limitations
   each method ``m`` involved must be named ``self`` and
   the first argument of stand-alone functions must not be named ``self``.
 - Type variables can only be bound to types, not to type checking predicates.
+- Type variables follow a "observed common supertype" semantics.
+  This means that when a type variable is checked against several different 
+  types over time, it will bind to the type first seen, then accept that
+  type as well as its subclasses, and will later rebind if checked against
+  a superclass. It will reject only values that are neither subclass nor
+  superclass values of the current binding 
+  (but bounds and constraints are obeyed).
+  This is the most sensible semantics I could think of, but may _appear_ overly
+  liberal in some situations.
 - There is a bug in the combination of at least Python 3.4 with
   PyPI typing 3.5.0.1 that makes e.g. ``issubclass(tg.Iterable, tg.Generic)``
   false (on the other hand, ``issubclass(tg.Sequence, tg.Iterable)`` is true
   as it should). 
   The full implications for type checking Generics are unclear,
-  expect some Generics type checks to go wrong in this configuration.
-- !!!(not thread-safe)
+  expect some Generics type checks to _perhaps_ go wrong in this configuration.
+- The contents of ``tg.Generic`` containers are checked only in the following
+  cases:
+  - subtypes of ``tg.Sequence`` with exactly 1 generic parameter:
+    will check the first element, last element, and two random elements.
+  - subtypes of ``tg.Mapping`` with exactly 2 generic parameters:
+    will check the first four pairs returned by ``items()``.
+  - other subtypes of ``tg.Iterable``:
+    will check the first four elements.
+- Complex ``tg.Generic`` cases can sometimes not be content-checked, 
+  because ``tg`` currently has no mechanism for
+  determining the meaning of the type variables involved.
+  For instance, ``tg.ItemsView`` has three generic parameters 
+  ``(tg.T_co, tg.KT, tg.VT_co)``, the first of which represents the
+  ``tg.Tuple[tg.KT, tg.VT_co]`` returned by each call to the iterator -- but
+  how, in general (that is, for user-defined types), is a poor type checker
+  to know this?
 - Contrary to PEP 484, a default argument value of ``None``
   does not yet modify type ``X`` to become ``tg.Optional[X]``
   (although using ``tg.get_type_hints()`` for the implementation would 
