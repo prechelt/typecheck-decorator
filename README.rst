@@ -96,5 +96,7 @@ Other kinds of annotations:
   keys are strings and all values are homogeneous lists of Persons,
 - and so on.
 
+Tox-tested on CPython 3.3, 3.4, 3.5.
+
 Find the documentation at
 https://github.com/prechelt/typecheck-decorator
