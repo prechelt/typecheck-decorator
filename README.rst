@@ -81,9 +81,8 @@ well, the second is not. The closest approximation would look like this:
 
   foo2((4,10,True), "r")   # OK
   foo2([4,10,True], "g")   # OK: list is acceptable in place of tuple
-  foo2((4,10,1), "rg")     # Wrong: 1 is not a bool (but meant-to-be-too-long string is not detected)
-  foo2(None,     "R")      # Wrong: None is no tuple (but meant-to-be-illegal character is not detected)
-
+  foo2((4,10,1), "rg")     # Wrong: 1 is not a bool (but too-long string is _not_ detected)
+  foo2(None,     "R")      # Wrong: None is no tuple (but illegal character is _not_ detected)
 
 
 Other kinds of annotations:
