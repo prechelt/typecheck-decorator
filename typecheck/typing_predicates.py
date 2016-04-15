@@ -180,7 +180,8 @@ class TypeNameChecker(fw.Checker):
         self._typename = typename
 
     def check(self, value, namespace):
-        return type(value).__name__ == self._typename
+        value_class = value if inspect.isclass(value) else type(value)
+        return any(cls.__name__ == self._typename for cls in value_class.mro())
         # TODO: handle complex forward references such as 'mymodule.MyClass'
 
 # Should be the second type registered, because strings are sequences so that
