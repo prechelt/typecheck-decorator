@@ -122,9 +122,8 @@ class PatternChecker(fw.Checker):
   def check(self, value, namespace):
     if not isinstance(value, self.pattern.impl_type):
       return False
-    check = fw.Checker.create(self.pattern.typevar)
-    if not check(value.pattern, namespace):
-      return False
+    check = fw.Checker.create(self.pattern.type_var)
+    return check(value.pattern, namespace)
 
 fw.Checker.register(_is_pattern, PatternChecker, prepend=True)
 
