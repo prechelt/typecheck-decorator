@@ -110,13 +110,13 @@ fw.Checker.register(_is_typevar, TypeVarChecker, prepend=True)
 
 
 def _is_pattern(annotation):
-  try:  # isclass(Pattern) returns False, but issubclass still works
-    return issubclass(annotation, Pattern)
+  try:  # isclass(tg.Pattern) returns False, but issubclass still works
+    return issubclass(annotation, tg.Pattern)
   except TypeError:
     return False
 
 class PatternChecker(fw.Checker):
-  def __init__(self, pattern: Pattern):
+  def __init__(self, pattern: tg.Pattern):
     self.pattern = pattern
 
   def check(self, value, namespace):
