@@ -109,6 +109,25 @@ class TypeVarChecker(fw.Checker):
 fw.Checker.register(_is_typevar, TypeVarChecker, prepend=True)
 
 
+def _is_pattern(annotation):
+  try:  # isclass(Pattern) returns False, but issubclass still works
+    return issubclass(annotation, Pattern)
+  except TypeError:
+    return False
+
+class PatternChecker(fw.Checker):
+  def __init__(self, pattern: Pattern):
+    self.pattern = pattern
+
+  def check(self, value, namespace):
+    if not isinstance(value, self.pattern.impl_type):
+      return False
+    check = fw.Checker.create(self.pattern.type_var)
+    return check(value.pattern, namespace)
+
+fw.Checker.register(_is_pattern, PatternChecker, prepend=True)
+
+
 def _is_tg_tuple(annotation):
     return (inspect.isclass(annotation) and
             issubclass(annotation, tg.Tuple) and
