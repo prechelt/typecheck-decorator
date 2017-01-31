@@ -176,7 +176,15 @@ def _is_tg_union(annotation):
 class UnionChecker(fw.Checker):
     def __init__(self, tg_union_class):
         self._cls = tg_union_class
-        self._checks = tuple(fw.Checker.create(p) for p in self._cls.__union_params__)
+        # Since typing 3.5.3.0, parameters of Union are not named
+        # "__union_params__" anymore but "__parameters__"
+        try:
+            union_params = self._cls.__union_params__
+        except AttributeError:
+            union_params = self._cls.__parameters__
+
+        self._checks = tuple(fw.Checker.create(p) for p in union_params)
+
 
     def check(self, value, namespace):
         """
