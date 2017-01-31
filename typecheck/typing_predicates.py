@@ -136,7 +136,13 @@ def _is_tg_tuple(annotation):
 class TupleChecker(fw.FixedSequenceChecker):
     def __init__(self, tg_tuple_class):
         self._cls = tg_tuple_class
-        self._checks = tuple(fw.Checker.create(t) for t in self._cls.__tuple_params__)
+        # Since typing 3.5.3.0, parameters of Tuples are not named
+        # "__tuple_params__" anymore but "__parameters__"
+        try:
+            tuple_params = self._cls.__tuple_params__
+        except AttributeError:
+            tuple_params = self._cls.__parameters__
+        self._checks = tuple(fw.Checker.create(t) for t in tuple_params)
 
     # check() is inherited
 
@@ -171,7 +177,12 @@ fw.Checker.register(_is_tg_namedtuple, NamedTupleChecker, prepend=True)
 
 
 def _is_tg_union(annotation):
-    return issubclass(annotation, tg.Union)
+    #Since typing 3.5.3.0, it is no longer allowed to use issubclass
+    #with tg.Union
+    try:
+        return issubclass(annotation, tg.Union)
+    except TypeError:
+        return isinstance(annotation, tg._Union)
 
 class UnionChecker(fw.Checker):
     def __init__(self, tg_union_class):
