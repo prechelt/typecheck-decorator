@@ -122,25 +122,6 @@ class NoneChecker(fw.Checker):
 fw.Checker.register(_is_none, NoneChecker, prepend=True)
 
 
-def _is_pattern(annotation):
-  try:  # isclass(tg.Pattern) returns False, but issubclass still works
-    return issubclass(annotation, tg.Pattern)
-  except TypeError:
-    return False
-
-class PatternChecker(fw.Checker):
-  def __init__(self, pattern: tg.Pattern):
-    self.pattern = pattern
-
-  def check(self, value, namespace):
-    if not isinstance(value, self.pattern.impl_type):
-      return False
-    check = fw.Checker.create(self.pattern.type_var)
-    return check(value.pattern, namespace)
-
-fw.Checker.register(_is_pattern, PatternChecker, prepend=True)
-
-
 def _is_tg_tuple(annotation):
     return (inspect.isclass(annotation) and
             issubclass(annotation, tg.Tuple) and
@@ -149,13 +130,7 @@ def _is_tg_tuple(annotation):
 class TupleChecker(fw.FixedSequenceChecker):
     def __init__(self, tg_tuple_class):
         self._cls = tg_tuple_class
-        # Since typing 3.5.3.0, parameters of Tuples are not named
-        # "__tuple_params__" anymore but "__args__"
-        try:
-            tuple_params = self._cls.__tuple_params__
-        except AttributeError:
-            tuple_params = self._cls.__args__
-        self._checks = tuple(fw.Checker.create(t) for t in tuple_params)
+        self._checks = tuple(fw.Checker.create(t) for t in self._cls.__tuple_params__)
 
     # check() is inherited
 
@@ -165,7 +140,7 @@ fw.Checker.register(_is_tg_tuple, TupleChecker, prepend=True)
 def _is_tg_namedtuple(annotation):
     return (inspect.isclass(annotation) and
             issubclass(annotation, tuple) and
-            hasattr(annotation, "_field_types"))
+            getattr(annotation, "_field_types"))
 
 class NamedTupleChecker(fw.Checker):
     def __init__(self, tg_namedtuple_class):
@@ -190,25 +165,12 @@ fw.Checker.register(_is_tg_namedtuple, NamedTupleChecker, prepend=True)
 
 
 def _is_tg_union(annotation):
-    #Since typing 3.5.3.0, it is no longer allowed to use issubclass
-    #with tg.Union
-    try:
-        return issubclass(annotation, tg.Union)
-    except TypeError:
-        return isinstance(annotation, tg._Union)
+    return issubclass(annotation, tg.Union)
 
 class UnionChecker(fw.Checker):
     def __init__(self, tg_union_class):
         self._cls = tg_union_class
-        # Since typing 3.5.3.0, parameters of Union are not named
-        # "__union_params__" anymore but "__args__"
-        try:
-            union_params = self._cls.__union_params__
-        except AttributeError:
-            union_params = self._cls.__args__
-
-        self._checks = tuple(fw.Checker.create(p) for p in union_params)
-
+        self._checks = tuple(fw.Checker.create(p) for p in self._cls.__union_params__)
 
     def check(self, value, namespace):
         """
@@ -231,8 +193,7 @@ class TypeNameChecker(fw.Checker):
         self._typename = typename
 
     def check(self, value, namespace):
-        value_class = value if inspect.isclass(value) else type(value)
-        return any(cls.__name__ == self._typename for cls in value_class.mro())
+        return type(value).__name__ == self._typename
         # TODO: handle complex forward references such as 'mymodule.MyClass'
 
 # Should be the second type registered, because strings are sequences so that
