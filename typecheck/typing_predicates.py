@@ -137,11 +137,11 @@ class TupleChecker(fw.FixedSequenceChecker):
     def __init__(self, tg_tuple_class):
         self._cls = tg_tuple_class
         # Since typing 3.5.3.0, parameters of Tuples are not named
-        # "__tuple_params__" anymore but "__parameters__"
+        # "__tuple_params__" anymore but "__args__"
         try:
             tuple_params = self._cls.__tuple_params__
         except AttributeError:
-            tuple_params = self._cls.__parameters__
+            tuple_params = self._cls.__args__
         self._checks = tuple(fw.Checker.create(t) for t in tuple_params)
 
     # check() is inherited
@@ -188,11 +188,11 @@ class UnionChecker(fw.Checker):
     def __init__(self, tg_union_class):
         self._cls = tg_union_class
         # Since typing 3.5.3.0, parameters of Union are not named
-        # "__union_params__" anymore but "__parameters__"
+        # "__union_params__" anymore but "__args__"
         try:
             union_params = self._cls.__union_params__
         except AttributeError:
-            union_params = self._cls.__parameters__
+            union_params = self._cls.__args__
 
         self._checks = tuple(fw.Checker.create(p) for p in union_params)
 
