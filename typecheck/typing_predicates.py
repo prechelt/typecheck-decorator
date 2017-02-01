@@ -128,18 +128,6 @@ class PatternChecker(fw.Checker):
 fw.Checker.register(_is_pattern, PatternChecker, prepend=True)
 
 
-def _is_none(annotation):
-  return annotation is None or annotation is type(None)
-
-class NoneChecker(fw.Checker):
-  def __init__(self, _):
-    pass
-
-  def check(self, value, namespace):
-    return value is None
-
-fw.Checker.register(_is_none, NoneChecker, prepend=True)
-
 def _is_tg_tuple(annotation):
     return (inspect.isclass(annotation) and
             issubclass(annotation, tg.Tuple) and
