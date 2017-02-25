@@ -400,7 +400,7 @@ Not all violations will be detected because, for efficiency reasons,
 the check will cover only a sample of ``checkonly`` elements of the sequence.
 This sample always includes the first and last element, the rest
 is a random sample.
-As an interesting special case, consider submitting a string to an 
+As an interesting special case, consider submitting a string to a
 parameter declared as ``tc.seq_of(str)``. A string is a sequence.
 Its elements are strings. So the call should be considered OK.
 Since this is usually not what you want, ``tc.seq_of()`` will 
@@ -696,7 +696,7 @@ Limitations
   each method ``m`` involved must be named ``self`` and
   the first argument of stand-alone functions must not be named ``self``.
 - Type variables can only be bound to types, not to type checking predicates.
-- Type variables follow a "observed common supertype" semantics.
+- Type variables follow an "observed common supertype" semantics.
   This means that when a type variable is checked against several different 
   types over time, it will bind to the type first seen, then accept that
   type as well as its subclasses, and will later rebind if checked against
