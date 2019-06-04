@@ -152,12 +152,12 @@ fw.Checker.register(_is_tg_namedtuple, NamedTupleChecker, prepend=True)
 
 
 def _is_tg_union(annotation):
-    return issubclass(annotation, tg.Union)
+    return hasattr(annotation, '__origin__') and annotation.__origin__ is tg.Union
 
 class UnionChecker(fw.Checker):
     def __init__(self, tg_union_class):
         self._cls = tg_union_class
-        self._checks = tuple(fw.Checker.create(p) for p in self._cls.__union_params__)
+        self._checks = tuple(fw.Checker.create(p) for p in self._cls.__args__)
 
     def check(self, value, namespace):
         """
