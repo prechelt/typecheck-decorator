@@ -4,7 +4,7 @@ import typing as tg
 
 ################################################################################
 
-_enabled = True
+_enabled = __debug__  # disable typchecking in optimized mode: python -O
 
 
 def disable():
@@ -103,7 +103,6 @@ class TypeVarNamespace:
         rebind the type variable to supertypes of the current binding several
         times until the required most general binding is found.
         """
-        result = True
         binding = self.binding_of(typevar)  # may or may not exist
         if binding is None:
             self.bind(typevar, its_type)  # initial binding, OK
