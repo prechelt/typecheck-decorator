@@ -170,7 +170,7 @@ as its only argument and must return a value that evaluates to
 Example:
 
    ```Python
-   def is_even(n): type(n) is int and n%2 == 0
+   def is_even(n): return type(n) is int and n%2 == 0
 
    @tc.typecheck
    def foo3(a:int) -> is_even :
