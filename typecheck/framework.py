@@ -1,4 +1,4 @@
-import collections
+import collections.abc
 import inspect
 import typing as tg
 
@@ -186,7 +186,7 @@ class optional(Checker):
 ################################################################################
 
 def _is_sequence(annotation):
-    return isinstance(annotation, collections.Sequence)
+    return isinstance(annotation, collections.abc.Sequence)
 
 
 class FixedSequenceChecker(Checker):

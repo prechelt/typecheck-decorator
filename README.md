@@ -188,7 +188,7 @@ a predicate on the fly.
 
 The annotation is an expression that evaluates to a tuple or list
 (rather than a type or a predicate);
-more precisely, it can be any ``collections.Sequence`` object.
+more precisely, it can be any ``collections.abc.Sequence`` object.
 This is a very pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in sequence types.
@@ -240,7 +240,7 @@ will be ignored, which is confusing and error-prone.
 
 The annotation is an expression that evaluates to a dictionary
 (rather than a type or a predicate);
-more precisely, it can be any ``collections.Mapping`` object.
+more precisely, it can be any ``collections.abc.Mapping`` object.
 Again, this is a pragmatic extension for programs that do not model
 every little data structure as a class
 but rather make heavy use of the built-in types.
@@ -394,7 +394,7 @@ Also works for bytestrings if you use a bytestring regular expression.
 
 Takes any other annotation ``annot``.
 Allows any argument that is a sequence
-(tuple or list, in fact any ``collections.Sequence``)
+(tuple or list, in fact any ``collections.abc.Sequence``)
 in which each element is allowed by ``annot``.
 Not all violations will be detected because, for efficiency reasons,
 the check will cover only a sample of ``checkonly`` elements of the sequence.
@@ -428,7 +428,7 @@ is ``tg.Sequence[annot]``.
 **tc.list_of(annot, checkonly=4)**:
 
 Just like ``seq_of(annot, checkonly)``, except that it requires the
-sequence to be a ``collections.MutableSequence``.
+sequence to be a ``collections.abc.MutableSequence``.
 
    ```Python
    @tc.typecheck
@@ -443,7 +443,7 @@ is ``tg.MutableSequence[annot]``.
 **tc.map_of(keys_annot, values_annot, checkonly=4)**:
 
 Takes two annotations ``keys_annot`` and ``values_annot``.
-Allows any argument that is a ``collections.Mapping`` (typically a dict)
+Allows any argument that is a ``collections.abc.Mapping`` (typically a dict)
 in which each key is allowed by keys_annot and
 each value is allowed by values_annot.
 Not all violations will be detected because for efficiency reasons,
