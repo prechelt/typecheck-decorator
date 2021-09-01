@@ -1,5 +1,5 @@
 import builtins
-import collections
+import collections.abc
 import random
 import re as regex_module
 
@@ -7,7 +7,7 @@ import typecheck.framework as fw
 
 
 def ismapping(annotation):
-    return isinstance(annotation, collections.Mapping)
+    return isinstance(annotation, collections.abc.Mapping)
 
 
 class FixedMappingChecker(fw.Checker):
@@ -93,14 +93,14 @@ class sequence_of(fw.Checker):
 
 class seq_of(sequence_of):
     def check(self, value, namespace):
-        return (isinstance(value, collections.Sequence) and
+        return (isinstance(value, collections.abc.Sequence) and
                 not isinstance(value, str) and
                 super().check(value, namespace))
 
 
 class list_of(sequence_of):
     def check(self, value, namespace):
-        return (isinstance(value, collections.MutableSequence) and
+        return (isinstance(value, collections.abc.MutableSequence) and
                 super().check(value, namespace))
 
 
@@ -112,7 +112,7 @@ class map_of(fw.Checker):
         assert self._checkonly >= 1
 
     def check(self, value, namespace):
-        if not isinstance(value, collections.Mapping):
+        if not isinstance(value, collections.abc.Mapping):
             return False
         count = 0
         for mykey, myvalue in value.items():
