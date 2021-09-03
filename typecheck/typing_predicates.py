@@ -127,7 +127,7 @@ fw.Checker.register(_is_tg_tuple, TupleChecker, prepend=True)
 def _is_tg_namedtuple(annotation):
     return (inspect.isclass(annotation) and
             issubclass(annotation, tuple) and
-            getattr(annotation, "_field_types"))
+            hasattr(annotation, "_field_types"))
 
 class NamedTupleChecker(fw.Checker):
     def __init__(self, tg_namedtuple_class):
